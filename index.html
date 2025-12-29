@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专注与冷静计时器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            transition: background-color 0.8s ease, color 0.8s ease;
+            touch-action: manipulation;
+        }
+        .timer-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+            transition: background 0.8s ease;
+        }
+        .cooling-mode .timer-card {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .digital-font {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+        /* 脉动效果 */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .pulse {
+            animation: pulse-red 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div id="main-container" class="max-w-md w-full timer-card rounded-[2rem] shadow-2xl p-8 text-center border border-white">
+        <h1 id="status-title" class="text-2xl font-bold mb-2 opacity-80">准备就绪</h1>
+        <p id="mode-desc" class="text-sm opacity-60 mb-6">点击下方按钮开始 5 分钟计时</p>
+
+        <div id="timer-display" class="digital-font text-8xl font-black my-8 text-slate-800">
+            05:00
+        </div>
+
+        <div class="space-y-4">
+            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 text-lg">
+                开始计时
+            </button>
+            
+            <button id="trigger-btn" class="w-full bg-white border-2 border-red-500 text-red-500 hover:bg-red-50 text-white font-bold py-4 rounded-2xl shadow-md transform transition active:scale-95 text-lg hidden">
+                立即进入冷静期
+            </button>
+        </div>
+
+        <div id="info-footer" class="mt-8 text-xs opacity-40 leading-relaxed">
+            冷静期后将自动开启双倍剩余时间的任务模式
+        </div>
+    </div>
+
+    <script>
+        const body = document.body;
+        const mainContainer = document.getElementById('main-container');
+        const statusTitle = document.getElementById('status-title');
+        const modeDesc = document.getElementById('mode-desc');
+        const timerDisplay = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        const triggerBtn = document.getElementById('trigger-btn');
+
+        let timeLeft = 5 * 60; // 默认 300 秒
+        let timerInterval = null;
+        let isCoolingDown = false;
+        let lastTaskRemainingTime = 0;
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateUI() {
+            timerDisplay.textContent = formatTime(timeLeft);
+            
+            if (isCoolingDown) {
+                body.className = "bg-red-600 min-h-screen flex items-center justify-center p-4 cooling-mode";
+                statusTitle.textContent = "冷静期";
+                statusTitle.classList.add('text-white');
+                timerDisplay.classList.add('text-white');
+                modeDesc.textContent = "请深呼吸，稍作休息";
+                modeDesc.classList.add('text-white');
+                triggerBtn.classList.add('hidden');
+                startBtn.classList.add('hidden');
+            } else {
+                body.className = "bg-slate-100 min-h-screen flex items-center justify-center p-4";
+                statusTitle.classList.remove('text-white');
+                timerDisplay.classList.remove('text-white');
+                modeDesc.classList.remove('text-white');
+                timerDisplay.classList.add('text-slate-800');
+                
+                if (timerInterval) {
+                    statusTitle.textContent = "正在计时";
+                    startBtn.classList.add('hidden');
+                    triggerBtn.classList.remove('hidden');
+                } else {
+                    statusTitle.textContent = "已暂停/结束";
+                    startBtn.classList.remove('hidden');
+                    triggerBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateUI();
+                } else {
+                    handleTimerEnd();
+                }
+            }, 1000);
+            updateUI();
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            updateUI();
+        }
+
+        function handleTimerEnd() {
+            stopTimer();
+            if (isCoolingDown) {
+                // 冷静期结束 -> 进入双倍时间模式
+                isCoolingDown = false;
+                timeLeft = lastTaskRemainingTime * 2;
+                modeDesc.textContent = `任务重启：刚才剩余 ${lastTaskRemainingTime}s 的双倍时间`;
+                startTimer();
+            } else {
+                statusTitle.textContent = "计时完成";
+                modeDesc.textContent = "您可以手动重新开始";
+            }
+        }
+
+        // 按钮事件：开始
+        startBtn.addEventListener('click', () => {
+            startTimer();
+        });
+
+        // 核心逻辑：触发冷静期
+        triggerBtn.addEventListener('click', () => {
+            // 1. 记录当前剩余时间
+            lastTaskRemainingTime = timeLeft;
+            
+            // 2. 切换状态
+            isCoolingDown = true;
+            
+            // 3. 设置冷静期时间（3分钟 = 180秒）
+            timeLeft = 3 * 60; 
+            
+            // 4. 重启计时循环
+            startTimer();
+        });
+
+        // 初始化显示
+        updateUI();
+    </script>
+</body>
+</html>
