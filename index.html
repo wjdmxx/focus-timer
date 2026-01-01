@@ -354,6 +354,52 @@
             font-weight: 700;
             color: #3b82f6;
         }
+
+        /* 随机模式选择器样式 */
+        .random-mode-selector {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            border-color: #8b5cf6;
+            color: #8b5cf6;
+        }
+
+        .mode-btn.active {
+            border-color: #8b5cf6;
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .random-info {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #6b7280;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        .random-info-hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -376,23 +422,31 @@
             <div id="random-toggle" class="toggle-switch"></div>
         </div>
 
+        <!-- 随机模式类型选择（普通/EX） -->
+        <div id="random-mode-options" class="toggle-container random-info-hidden" style="flex-direction: column; gap: 8px;">
+            <div class="random-mode-selector" style="width: 100%;">
+                <button id="mode-normal" class="mode-btn active">普通</button>
+                <button id="mode-ex" class="mode-btn">EX</button>
+            </div>
+            <div id="random-info-normal" class="random-info">
+                <strong>普通随机模式：</strong><br>
+                • 初始时间：10-20 分钟<br>
+                • 冷静期：2-4 分钟<br>
+                • 时间倍率：1.5-3.0 倍
+            </div>
+            <div id="random-info-ex" class="random-info random-info-hidden">
+                <strong>EX随机模式：</strong><br>
+                • 初始时间：20-30 分钟<br>
+                • 冷静期：1-2 分钟<br>
+                • 时间倍率：2-4 倍<br>
+                • 特殊规则：翻倍后不足10分钟时，至少15分钟
+            </div>
+        </div>
+
+        <!-- 隐藏时间开关 -->
         <div class="toggle-container">
             <span class="toggle-label">隐藏时间</span>
             <div id="hide-time-toggle" class="toggle-switch"></div>
-        </div>
-
-        <div id="random-options" class="hidden space-y-3 mb-5">
-            <div class="flex items-center justify-center gap-4 text-sm font-semibold text-slate-600">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="random-mode" value="normal" class="accent-violet-500" checked>
-                    普通
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="random-mode" value="ex" class="accent-violet-500">
-                    EX
-                </label>
-            </div>
-            <p id="random-mode-description" class="text-xs text-slate-500 leading-relaxed"></p>
         </div>
 
         <div id="config-items" class="space-y-5">
@@ -476,14 +530,18 @@
         const confirmBtn = document.getElementById('confirm-btn');
         const restartBtn = document.getElementById('restart-btn');
         const randomToggle = document.getElementById('random-toggle');
-        const hideTimeToggle = document.getElementById('hide-time-toggle');
         const configItems = document.getElementById('config-items');
         const focusGlow = document.getElementById('focus-glow');
         const timelineEl = document.getElementById('timeline');
         const totalTimeEl = document.getElementById('total-time');
-        const randomOptions = document.getElementById('random-options');
-        const randomModeDescription = document.getElementById('random-mode-description');
-        const randomModeRadios = document.querySelectorAll('input[name="random-mode"]');
+
+        // 新增DOM元素
+        const hideTimeToggle = document.getElementById('hide-time-toggle');
+        const randomModeOptions = document.getElementById('random-mode-options');
+        const modeNormalBtn = document.getElementById('mode-normal');
+        const modeExBtn = document.getElementById('mode-ex');
+        const randomInfoNormal = document.getElementById('random-info-normal');
+        const randomInfoEx = document.getElementById('random-info-ex');
 
         // 滑动条和输入框
         const initialTimeSlider = document.getElementById('initial-time-slider');
@@ -502,15 +560,15 @@
 
         // 随机模式状态
         let isRandomMode = false;
-        let randomModeType = 'normal';
-        let isHideTimeMode = false;
+        let isExMode = false; // 新增：是否为EX模式
+        let isHideTimeMode = false; // 新增：是否隐藏时间
 
         // 计时器状态
         let timeLeft = 0;
         let timerInterval = null;
         let isCoolingDown = false;
         let lastTaskRemainingTime = 0;
-        let isFocusCompletePending = false;
+        let timerEnded = false; // 新增：标记计时是否已结束（用于隐藏时间模式）
 
         // 记录计时流程
         let sessionHistory = [];
@@ -521,65 +579,41 @@
             return Math.random() * (max - min) + min;
         }
 
-        const randomModeConfig = {
-            normal: {
-                initialRange: [10, 20],
-                coolingRange: [2, 4],
-                multiplierRange: [1.5, 3.0],
-                description: '初始时间 10-20 分钟，冷静期 2-4 分钟，时间倍率 1.5-3 倍。'
-            },
-            ex: {
-                initialRange: [20, 30],
-                coolingRange: [1, 2],
-                multiplierRange: [2.0, 4.0],
-                minAfterMultiplier: 15,
-                minThreshold: 10,
-                description: '初始时间 20-30 分钟，冷静期 1-2 分钟，时间倍率 2-4 倍。进入倒计时阶段时，倍率后若不足 10 分钟则至少 15 分钟。'
-            }
-        };
-
-        function updateRandomModeDescription() {
-            randomModeDescription.textContent = randomModeConfig[randomModeType].description;
-        }
-
-        function getRandomRangeValue([min, max]) {
-            return randomInRange(min, max);
-        }
-
-        function applyExMinimum(durationMinutes) {
-            const exConfig = randomModeConfig.ex;
-            if (randomModeType === 'ex' && durationMinutes < exConfig.minThreshold) {
-                return exConfig.minAfterMultiplier;
-            }
-            return durationMinutes;
-        }
-
-        function beginFocusPhase(durationSeconds) {
-            timeLeft = durationSeconds;
-            isCoolingDown = false;
-            isFocusCompletePending = false;
-            startTimer();
-        }
-
         // 随机模式切换
         randomToggle.addEventListener('click', () => {
             isRandomMode = !isRandomMode;
             randomToggle.classList.toggle('active', isRandomMode);
             configItems.classList.toggle('config-disabled', isRandomMode);
-            randomOptions.classList.toggle('hidden', !isRandomMode);
+            
+            // 显示/隐藏随机模式选项
+            if (isRandomMode) {
+                randomModeOptions.classList.remove('random-info-hidden');
+            } else {
+                randomModeOptions.classList.add('random-info-hidden');
+            }
         });
 
+        // 隐藏时间模式切换
         hideTimeToggle.addEventListener('click', () => {
             isHideTimeMode = !isHideTimeMode;
             hideTimeToggle.classList.toggle('active', isHideTimeMode);
-            updateUI();
         });
 
-        randomModeRadios.forEach((radio) => {
-            radio.addEventListener('change', (event) => {
-                randomModeType = event.target.value;
-                updateRandomModeDescription();
-            });
+        // 普通/EX模式切换
+        modeNormalBtn.addEventListener('click', () => {
+            isExMode = false;
+            modeNormalBtn.classList.add('active');
+            modeExBtn.classList.remove('active');
+            randomInfoNormal.classList.remove('random-info-hidden');
+            randomInfoEx.classList.add('random-info-hidden');
+        });
+
+        modeExBtn.addEventListener('click', () => {
+            isExMode = true;
+            modeExBtn.classList.add('active');
+            modeNormalBtn.classList.remove('active');
+            randomInfoEx.classList.remove('random-info-hidden');
+            randomInfoNormal.classList.add('random-info-hidden');
         });
 
         // 同步滑动条和输入框
@@ -621,16 +655,13 @@
         }
 
         function updateUI() {
+            // 判断是否需要隐藏时间
             const shouldHideTime = isHideTimeMode && !isCoolingDown;
-            timerDisplay.textContent = shouldHideTime ? '**:**' : formatTime(timeLeft);
-
-            if (isPreFocusCountdown) {
-                body.className = "bg-slate-100 min-h-screen flex items-center justify-center p-4";
-                timerDisplay.classList.remove('text-white');
-                timerDisplay.classList.add('text-slate-800');
-                triggerBtn.classList.add('hidden');
-                focusGlow.classList.add('hidden');
-                return;
+            
+            if (shouldHideTime) {
+                timerDisplay.textContent = '**:**';
+            } else {
+                timerDisplay.textContent = formatTime(timeLeft);
             }
 
             if (isCoolingDown) {
@@ -644,7 +675,7 @@
                 timerDisplay.classList.remove('text-white');
                 timerDisplay.classList.add('text-slate-800');
 
-                if (timerInterval || isFocusCompletePending) {
+                if (timerInterval || timerEnded) {
                     triggerBtn.classList.remove('hidden');
                     focusGlow.classList.remove('hidden');
                 } else {
@@ -657,13 +688,23 @@
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             currentPhaseStartTime = timeLeft;
+            timerEnded = false;
 
             timerInterval = setInterval(() => {
                 if (timeLeft > 0) {
                     timeLeft--;
                     updateUI();
                 } else {
-                    handleTimerEnd();
+                    // 计时结束
+                    if (isHideTimeMode && !isCoolingDown) {
+                        // 隐藏时间模式下，计时结束后停止计时但保持显示**:**
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        timerEnded = true;
+                        updateUI();
+                    } else {
+                        handleTimerEnd();
+                    }
                 }
             }, 1000);
             updateUI();
@@ -683,15 +724,6 @@
         }
 
         function handleTimerEnd() {
-            if (isPreFocusCountdown) {
-                stopTimer();
-                isPreFocusCountdown = false;
-                timeLeft = pendingFocusDuration;
-                isCoolingDown = false;
-                startTimer();
-                return;
-            }
-
             // 记录当前阶段
             if (isCoolingDown) {
                 recordPhase('cooling', currentPhaseStartTime);
@@ -700,35 +732,42 @@
             }
 
             stopTimer();
+            timerEnded = false;
+            
             if (isCoolingDown) {
                 // 冷静期结束 -> 进入倍率时间模式
                 isCoolingDown = false;
 
-                // 如果是随机模式，每次进入新计时阶段时重新随机倍率
+                // 根据模式确定倍率
                 let currentMultiplier = config.multiplier;
                 if (isRandomMode) {
-                    const multiplierRange = randomModeConfig[randomModeType].multiplierRange;
-                    currentMultiplier = getRandomRangeValue(multiplierRange);
+                    if (isExMode) {
+                        // EX模式：2-4倍
+                        currentMultiplier = randomInRange(2.0, 4.0);
+                    } else {
+                        // 普通模式：1.5-3.0倍
+                        currentMultiplier = randomInRange(1.5, 3.0);
+                    }
                 }
 
-                let nextFocusMinutes = (lastTaskRemainingTime / 60) * currentMultiplier;
-                nextFocusMinutes = applyExMinimum(nextFocusMinutes);
-                const nextFocusSeconds = Math.round(nextFocusMinutes * 60);
-
-                if (nextFocusSeconds > 0) {
-                    beginFocusPhase(nextFocusSeconds);
+                timeLeft = Math.round(lastTaskRemainingTime * currentMultiplier);
+                
+                // EX模式特殊规则：翻倍后不足10分钟时，至少15分钟
+                if (isRandomMode && isExMode) {
+                    if (timeLeft < 10 * 60 && timeLeft > 0) {
+                        timeLeft = 15 * 60;
+                    }
+                }
+                
+                if (timeLeft > 0) {
+                    startTimer();
                 } else {
                     // 如果倍率后时间为0，直接结束
                     showCompletePage();
                 }
             } else {
-                if (isHideTimeMode) {
-                    isFocusCompletePending = true;
-                    updateUI();
-                } else {
-                    // 计时完成，显示完成页面
-                    showCompletePage();
-                }
+                // 计时完成，显示完成页面
+                showCompletePage();
             }
         }
 
@@ -794,11 +833,16 @@
         confirmBtn.addEventListener('click', () => {
             // 重置历史记录
             sessionHistory = [];
+            timerEnded = false;
 
             if (isRandomMode) {
-                const initialRange = randomModeConfig[randomModeType].initialRange;
-                config.initialTime = getRandomRangeValue(initialRange);
-                config.initialTime = applyExMinimum(config.initialTime);
+                if (isExMode) {
+                    // EX模式：初始时间 20-30 分钟
+                    config.initialTime = randomInRange(20, 30);
+                } else {
+                    // 普通随机模式：初始时间随机 10-20 分钟
+                    config.initialTime = randomInRange(10, 20);
+                }
                 // 冷却时间和倍率不在这里设置，而是在每次触发时随机
             } else {
                 // 固定模式：读取配置
@@ -816,16 +860,20 @@
             timeLeft = Math.round(config.initialTime * 60);
             isCoolingDown = false;
             lastTaskRemainingTime = 0;
-            isFocusCompletePending = false;
 
             // 切换到计时页面
             showTimerPage();
-            beginFocusPhase(timeLeft);
+            startTimer();
         });
 
-        // 核心逻辑：触发冷静期
+        // 核心逻辑：触发冷静期 / 隐藏时间模式下的按钮处理
         triggerBtn.addEventListener('click', () => {
-            if (isHideTimeMode && !isCoolingDown && isFocusCompletePending) {
+            // 隐藏时间模式下，如果计时已结束，则进入结算
+            if (isHideTimeMode && !isCoolingDown && timerEnded) {
+                // 记录专注阶段
+                recordPhase('focus', currentPhaseStartTime);
+                timerEnded = false;
+                // 计时完成，显示完成页面
                 showCompletePage();
                 return;
             }
@@ -841,13 +889,18 @@
 
             // 2. 切换状态
             isCoolingDown = true;
+            timerEnded = false;
 
             // 3. 设置冷静期时间
-            // 如果是随机模式，每次冷却时间在 2-4 分钟之间随机
             let coolingTime;
             if (isRandomMode) {
-                const coolingRange = randomModeConfig[randomModeType].coolingRange;
-                coolingTime = getRandomRangeValue(coolingRange);
+                if (isExMode) {
+                    // EX模式：1-2分钟
+                    coolingTime = randomInRange(1, 2);
+                } else {
+                    // 普通模式：2-4分钟
+                    coolingTime = randomInRange(2, 4);
+                }
             } else {
                 coolingTime = config.coolingTime;
             }
@@ -861,8 +914,6 @@
         restartBtn.addEventListener('click', () => {
             showConfigPage();
         });
-
-        updateRandomModeDescription();
     </script>
 </body>
 
