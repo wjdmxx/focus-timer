@@ -376,6 +376,25 @@
             <div id="random-toggle" class="toggle-switch"></div>
         </div>
 
+        <div class="toggle-container">
+            <span class="toggle-label">隐藏时间</span>
+            <div id="hide-time-toggle" class="toggle-switch"></div>
+        </div>
+
+        <div id="random-options" class="hidden space-y-3 mb-5">
+            <div class="flex items-center justify-center gap-4 text-sm font-semibold text-slate-600">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="random-mode" value="normal" class="accent-violet-500" checked>
+                    普通
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="random-mode" value="ex" class="accent-violet-500">
+                    EX
+                </label>
+            </div>
+            <p id="random-mode-description" class="text-xs text-slate-500 leading-relaxed"></p>
+        </div>
+
         <div id="config-items" class="space-y-5">
             <!-- 初始时间 -->
             <div class="config-item">
@@ -457,10 +476,14 @@
         const confirmBtn = document.getElementById('confirm-btn');
         const restartBtn = document.getElementById('restart-btn');
         const randomToggle = document.getElementById('random-toggle');
+        const hideTimeToggle = document.getElementById('hide-time-toggle');
         const configItems = document.getElementById('config-items');
         const focusGlow = document.getElementById('focus-glow');
         const timelineEl = document.getElementById('timeline');
         const totalTimeEl = document.getElementById('total-time');
+        const randomOptions = document.getElementById('random-options');
+        const randomModeDescription = document.getElementById('random-mode-description');
+        const randomModeRadios = document.querySelectorAll('input[name="random-mode"]');
 
         // 滑动条和输入框
         const initialTimeSlider = document.getElementById('initial-time-slider');
@@ -479,12 +502,15 @@
 
         // 随机模式状态
         let isRandomMode = false;
+        let randomModeType = 'normal';
+        let isHideTimeMode = false;
 
         // 计时器状态
         let timeLeft = 0;
         let timerInterval = null;
         let isCoolingDown = false;
         let lastTaskRemainingTime = 0;
+        let isFocusCompletePending = false;
 
         // 记录计时流程
         let sessionHistory = [];
@@ -495,11 +521,65 @@
             return Math.random() * (max - min) + min;
         }
 
+        const randomModeConfig = {
+            normal: {
+                initialRange: [10, 20],
+                coolingRange: [2, 4],
+                multiplierRange: [1.5, 3.0],
+                description: '初始时间 10-20 分钟，冷静期 2-4 分钟，时间倍率 1.5-3 倍。'
+            },
+            ex: {
+                initialRange: [20, 30],
+                coolingRange: [1, 2],
+                multiplierRange: [2.0, 4.0],
+                minAfterMultiplier: 15,
+                minThreshold: 10,
+                description: '初始时间 20-30 分钟，冷静期 1-2 分钟，时间倍率 2-4 倍。进入倒计时阶段时，倍率后若不足 10 分钟则至少 15 分钟。'
+            }
+        };
+
+        function updateRandomModeDescription() {
+            randomModeDescription.textContent = randomModeConfig[randomModeType].description;
+        }
+
+        function getRandomRangeValue([min, max]) {
+            return randomInRange(min, max);
+        }
+
+        function applyExMinimum(durationMinutes) {
+            const exConfig = randomModeConfig.ex;
+            if (randomModeType === 'ex' && durationMinutes < exConfig.minThreshold) {
+                return exConfig.minAfterMultiplier;
+            }
+            return durationMinutes;
+        }
+
+        function beginFocusPhase(durationSeconds) {
+            timeLeft = durationSeconds;
+            isCoolingDown = false;
+            isFocusCompletePending = false;
+            startTimer();
+        }
+
         // 随机模式切换
         randomToggle.addEventListener('click', () => {
             isRandomMode = !isRandomMode;
             randomToggle.classList.toggle('active', isRandomMode);
             configItems.classList.toggle('config-disabled', isRandomMode);
+            randomOptions.classList.toggle('hidden', !isRandomMode);
+        });
+
+        hideTimeToggle.addEventListener('click', () => {
+            isHideTimeMode = !isHideTimeMode;
+            hideTimeToggle.classList.toggle('active', isHideTimeMode);
+            updateUI();
+        });
+
+        randomModeRadios.forEach((radio) => {
+            radio.addEventListener('change', (event) => {
+                randomModeType = event.target.value;
+                updateRandomModeDescription();
+            });
         });
 
         // 同步滑动条和输入框
@@ -541,7 +621,8 @@
         }
 
         function updateUI() {
-            timerDisplay.textContent = formatTime(timeLeft);
+            const shouldHideTime = isHideTimeMode && !isCoolingDown;
+            timerDisplay.textContent = shouldHideTime ? '**:**' : formatTime(timeLeft);
 
             if (isCoolingDown) {
                 body.className = "bg-red-600 min-h-screen flex items-center justify-center p-4 cooling-mode";
@@ -554,7 +635,7 @@
                 timerDisplay.classList.remove('text-white');
                 timerDisplay.classList.add('text-slate-800');
 
-                if (timerInterval) {
+                if (timerInterval || isFocusCompletePending) {
                     triggerBtn.classList.remove('hidden');
                     focusGlow.classList.remove('hidden');
                 } else {
@@ -608,19 +689,28 @@
                 // 如果是随机模式，每次进入新计时阶段时重新随机倍率
                 let currentMultiplier = config.multiplier;
                 if (isRandomMode) {
-                    currentMultiplier = randomInRange(1.5, 3.0);
+                    const multiplierRange = randomModeConfig[randomModeType].multiplierRange;
+                    currentMultiplier = getRandomRangeValue(multiplierRange);
                 }
 
-                timeLeft = Math.round(lastTaskRemainingTime * currentMultiplier);
-                if (timeLeft > 0) {
-                    startTimer();
+                let nextFocusMinutes = (lastTaskRemainingTime / 60) * currentMultiplier;
+                nextFocusMinutes = applyExMinimum(nextFocusMinutes);
+                const nextFocusSeconds = Math.round(nextFocusMinutes * 60);
+
+                if (nextFocusSeconds > 0) {
+                    beginFocusPhase(nextFocusSeconds);
                 } else {
                     // 如果倍率后时间为0，直接结束
                     showCompletePage();
                 }
             } else {
-                // 计时完成，显示完成页面
-                showCompletePage();
+                if (isHideTimeMode) {
+                    isFocusCompletePending = true;
+                    updateUI();
+                } else {
+                    // 计时完成，显示完成页面
+                    showCompletePage();
+                }
             }
         }
 
@@ -688,8 +778,9 @@
             sessionHistory = [];
 
             if (isRandomMode) {
-                // 随机模式：初始时间随机 10-20 分钟
-                config.initialTime = randomInRange(10, 20);
+                const initialRange = randomModeConfig[randomModeType].initialRange;
+                config.initialTime = getRandomRangeValue(initialRange);
+                config.initialTime = applyExMinimum(config.initialTime);
                 // 冷却时间和倍率不在这里设置，而是在每次触发时随机
             } else {
                 // 固定模式：读取配置
@@ -707,14 +798,20 @@
             timeLeft = Math.round(config.initialTime * 60);
             isCoolingDown = false;
             lastTaskRemainingTime = 0;
+            isFocusCompletePending = false;
 
             // 切换到计时页面
             showTimerPage();
-            startTimer();
+            beginFocusPhase(timeLeft);
         });
 
         // 核心逻辑：触发冷静期
         triggerBtn.addEventListener('click', () => {
+            if (isHideTimeMode && !isCoolingDown && isFocusCompletePending) {
+                showCompletePage();
+                return;
+            }
+
             // 记录专注阶段（实际使用的时间 = 初始时间 - 剩余时间）
             const usedTime = currentPhaseStartTime - timeLeft;
             if (usedTime > 0) {
@@ -731,7 +828,8 @@
             // 如果是随机模式，每次冷却时间在 2-4 分钟之间随机
             let coolingTime;
             if (isRandomMode) {
-                coolingTime = randomInRange(2, 4);
+                const coolingRange = randomModeConfig[randomModeType].coolingRange;
+                coolingTime = getRandomRangeValue(coolingRange);
             } else {
                 coolingTime = config.coolingTime;
             }
@@ -745,6 +843,8 @@
         restartBtn.addEventListener('click', () => {
             showConfigPage();
         });
+
+        updateRandomModeDescription();
     </script>
 </body>
 
