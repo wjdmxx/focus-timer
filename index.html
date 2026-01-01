@@ -624,6 +624,15 @@
             const shouldHideTime = isHideTimeMode && !isCoolingDown;
             timerDisplay.textContent = shouldHideTime ? '**:**' : formatTime(timeLeft);
 
+            if (isPreFocusCountdown) {
+                body.className = "bg-slate-100 min-h-screen flex items-center justify-center p-4";
+                timerDisplay.classList.remove('text-white');
+                timerDisplay.classList.add('text-slate-800');
+                triggerBtn.classList.add('hidden');
+                focusGlow.classList.add('hidden');
+                return;
+            }
+
             if (isCoolingDown) {
                 body.className = "bg-red-600 min-h-screen flex items-center justify-center p-4 cooling-mode";
                 timerDisplay.classList.add('text-white');
@@ -674,6 +683,15 @@
         }
 
         function handleTimerEnd() {
+            if (isPreFocusCountdown) {
+                stopTimer();
+                isPreFocusCountdown = false;
+                timeLeft = pendingFocusDuration;
+                isCoolingDown = false;
+                startTimer();
+                return;
+            }
+
             // 记录当前阶段
             if (isCoolingDown) {
                 recordPhase('cooling', currentPhaseStartTime);
