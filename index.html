@@ -376,6 +376,11 @@
             <div id="random-toggle" class="toggle-switch"></div>
         </div>
 
+        <div class="toggle-container">
+            <span class="toggle-label">隐藏时间</span>
+            <div id="hide-time-toggle" class="toggle-switch"></div>
+        </div>
+
         <div id="random-options" class="hidden space-y-3 mb-5">
             <div class="flex items-center justify-center gap-4 text-sm font-semibold text-slate-600">
                 <label class="flex items-center gap-2 cursor-pointer">
@@ -471,6 +476,7 @@
         const confirmBtn = document.getElementById('confirm-btn');
         const restartBtn = document.getElementById('restart-btn');
         const randomToggle = document.getElementById('random-toggle');
+        const hideTimeToggle = document.getElementById('hide-time-toggle');
         const configItems = document.getElementById('config-items');
         const focusGlow = document.getElementById('focus-glow');
         const timelineEl = document.getElementById('timeline');
@@ -497,14 +503,14 @@
         // 随机模式状态
         let isRandomMode = false;
         let randomModeType = 'normal';
+        let isHideTimeMode = false;
 
         // 计时器状态
         let timeLeft = 0;
         let timerInterval = null;
         let isCoolingDown = false;
         let lastTaskRemainingTime = 0;
-        let isPreFocusCountdown = false;
-        let pendingFocusDuration = 0;
+        let isFocusCompletePending = false;
 
         // 记录计时流程
         let sessionHistory = [];
@@ -548,22 +554,11 @@
             return durationMinutes;
         }
 
-        function startPreFocusCountdown(durationSeconds) {
-            isPreFocusCountdown = true;
-            pendingFocusDuration = durationSeconds;
-            timeLeft = 10;
-            startTimer();
-        }
-
         function beginFocusPhase(durationSeconds) {
-            const durationToUse = durationSeconds;
+            timeLeft = durationSeconds;
             isCoolingDown = false;
-            if (isRandomMode) {
-                startPreFocusCountdown(durationToUse);
-            } else {
-                timeLeft = durationToUse;
-                startTimer();
-            }
+            isFocusCompletePending = false;
+            startTimer();
         }
 
         // 随机模式切换
@@ -572,6 +567,12 @@
             randomToggle.classList.toggle('active', isRandomMode);
             configItems.classList.toggle('config-disabled', isRandomMode);
             randomOptions.classList.toggle('hidden', !isRandomMode);
+        });
+
+        hideTimeToggle.addEventListener('click', () => {
+            isHideTimeMode = !isHideTimeMode;
+            hideTimeToggle.classList.toggle('active', isHideTimeMode);
+            updateUI();
         });
 
         randomModeRadios.forEach((radio) => {
@@ -620,7 +621,8 @@
         }
 
         function updateUI() {
-            timerDisplay.textContent = formatTime(timeLeft);
+            const shouldHideTime = isHideTimeMode && !isCoolingDown;
+            timerDisplay.textContent = shouldHideTime ? '**:**' : formatTime(timeLeft);
 
             if (isPreFocusCountdown) {
                 body.className = "bg-slate-100 min-h-screen flex items-center justify-center p-4";
@@ -642,7 +644,7 @@
                 timerDisplay.classList.remove('text-white');
                 timerDisplay.classList.add('text-slate-800');
 
-                if (timerInterval) {
+                if (timerInterval || isFocusCompletePending) {
                     triggerBtn.classList.remove('hidden');
                     focusGlow.classList.remove('hidden');
                 } else {
@@ -720,8 +722,13 @@
                     showCompletePage();
                 }
             } else {
-                // 计时完成，显示完成页面
-                showCompletePage();
+                if (isHideTimeMode) {
+                    isFocusCompletePending = true;
+                    updateUI();
+                } else {
+                    // 计时完成，显示完成页面
+                    showCompletePage();
+                }
             }
         }
 
@@ -809,19 +816,20 @@
             timeLeft = Math.round(config.initialTime * 60);
             isCoolingDown = false;
             lastTaskRemainingTime = 0;
-            isPreFocusCountdown = false;
+            isFocusCompletePending = false;
 
             // 切换到计时页面
             showTimerPage();
-            if (isRandomMode) {
-                beginFocusPhase(timeLeft);
-            } else {
-                startTimer();
-            }
+            beginFocusPhase(timeLeft);
         });
 
         // 核心逻辑：触发冷静期
         triggerBtn.addEventListener('click', () => {
+            if (isHideTimeMode && !isCoolingDown && isFocusCompletePending) {
+                showCompletePage();
+                return;
+            }
+
             // 记录专注阶段（实际使用的时间 = 初始时间 - 剩余时间）
             const usedTime = currentPhaseStartTime - timeLeft;
             if (usedTime > 0) {
