@@ -10,6 +10,7 @@
         body {
             transition: background-color 0.8s ease, color 0.8s ease;
             touch-action: manipulation;
+            --breath-duration: 2s;
         }
 
         .timer-card {
@@ -69,7 +70,7 @@
             height: 70vmax;
             border-radius: 50%;
             filter: blur(60px);
-            animation: breathing-glow 2s ease-in-out infinite;
+            animation: breathing-glow var(--breath-duration, 2s) ease-in-out infinite;
         }
 
         .focus-glow::before {
@@ -101,7 +102,7 @@
             height: 60vmax;
             border-radius: 50%;
             filter: blur(50px);
-            animation: breathing-glow 2s ease-in-out infinite;
+            animation: breathing-glow var(--breath-duration, 2s) ease-in-out infinite;
         }
 
         .glow-corner-tr {
@@ -415,7 +416,8 @@
         }
 
         .bottom-btn {
-            padding: 10px 28px;
+            width: 190px;
+            padding: 10px 0;
             border-radius: 14px;
             font-size: 0.85rem;
             font-weight: 600;
@@ -423,12 +425,12 @@
             background: rgba(255, 255, 255, 0.85);
             color: #64748b;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
             backdrop-filter: blur(6px);
             position: relative;
             overflow: hidden;
-            min-width: 140px;
             text-align: center;
+            box-sizing: border-box;
         }
 
         .bottom-btn:hover {
@@ -480,6 +482,56 @@
         .bottom-btn .btn-text {
             position: relative;
             z-index: 1;
+        }
+
+        /* 节拍器点指示 */
+        .beat-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            height: 26px;
+            margin-bottom: 8px;
+        }
+
+        .beat-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: background 200ms ease;
+        }
+
+        .beat-dot.accent {
+            background: #fca5a5;
+        }
+
+        .beat-dot.normal {
+            background: #93c5fd;
+        }
+
+        .cooling-mode .beat-dot {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        @keyframes beat-flash-accent {
+            0%   { transform: scale(1);   background: #fca5a5; box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+            18%  { transform: scale(2.2); background: #ef4444; box-shadow: 0 0 18px rgba(239, 68, 68, 0.85); }
+            100% { transform: scale(1);   background: #fca5a5; box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes beat-flash-normal {
+            0%   { transform: scale(1);   background: #93c5fd; box-shadow: 0 0 0 rgba(59, 130, 246, 0); }
+            18%  { transform: scale(1.7); background: #3b82f6; box-shadow: 0 0 12px rgba(59, 130, 246, 0.7); }
+            100% { transform: scale(1);   background: #93c5fd; box-shadow: 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .beat-dot.flash-accent {
+            animation: beat-flash-accent 160ms ease-out;
+        }
+
+        .beat-dot.flash-normal {
+            animation: beat-flash-normal 140ms ease-out;
         }
     </style>
 </head>
@@ -569,6 +621,10 @@
     <!-- 计时页面 -->
     <div id="timer-container"
         class="max-w-md w-full timer-card rounded-[2rem] shadow-2xl p-8 text-center border border-white hidden relative z-10">
+        <div id="beat-dots" class="beat-dots hidden">
+            <div id="beat-dot-accent" class="beat-dot accent"></div>
+            <div id="beat-dot-normal" class="beat-dot normal"></div>
+        </div>
         <div id="timer-display" class="digital-font text-8xl font-black my-8 text-slate-800">
             05:00
         </div>
@@ -1081,7 +1137,6 @@
 
             // 短暂显示时间
             timerDisplay.textContent = formatTime(timeLeft);
-            peekBtnText.textContent = '已显示 +' + Math.round(addSeconds / 60) + '分钟';
 
             clearTimeout(peekShowTimeout);
             peekShowTimeout = setTimeout(() => {
@@ -1198,9 +1253,379 @@
 
         const _origShowCompletePage = showCompletePage;
         showCompletePage = function() {
+            stopMetronome();
             _origShowCompletePage();
             bottomButtons.classList.add('hidden');
             peekTimeClearState();
+        };
+
+        // ========== 节拍器 ==========
+        const beatDotsEl = document.getElementById('beat-dots');
+        const beatDotAccent = document.getElementById('beat-dot-accent');
+        const beatDotNormal = document.getElementById('beat-dot-normal');
+
+        let audioCtx = null;
+        let metroActive = false;
+        let metroSchedulerId = null;
+        let nextBeatTime = 0;
+        let beatCounter = 0;
+        let tempoSchedule = [];
+        let scheduleStartTime = 0;
+        let lastBreathDuration = -1;
+        const LOOKAHEAD = 0.12;
+        const SCHED_INTERVAL = 25;
+
+        function ensureAudio() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    return null;
+                }
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        // ---- 段工具 ----
+        function segHold(dur, cpm) {
+            return { duration: dur, fromCPM: cpm, toCPM: cpm, curve: 'hold' };
+        }
+        function segLinear(dur, a, b) {
+            return { duration: dur, fromCPM: a, toCPM: b, curve: 'linear' };
+        }
+        function segEase(dur, a, b) {
+            return { duration: dur, fromCPM: a, toCPM: b, curve: 'ease' };
+        }
+        function segInstant(a, b) {
+            return { duration: 0.01, fromCPM: a, toCPM: b, curve: 'instant' };
+        }
+
+        // ---- 模式库（多种有趣曲线） ----
+        // 模式 1：缓慢爬升 -> 平台 -> 最终冲刺 -> 下降
+        function patternGradualClimb(start) {
+            const segs = [];
+            let c = start || randomInRange(100, 118);
+            segs.push(segHold(randomInRange(20, 45), c));
+            const p1 = randomInRange(145, 165);
+            segs.push(segLinear(randomInRange(150, 270), c, p1));
+            segs.push(segHold(randomInRange(30, 60), p1));
+            const p2 = randomInRange(178, 200);
+            segs.push(segLinear(randomInRange(15, 30), p1, p2));
+            segs.push(segHold(randomInRange(20, 50), p2));
+            segs.push(segLinear(randomInRange(30, 60), p2, randomInRange(100, 125)));
+            return segs;
+        }
+        // 模式 2：长时间低速 -> 突然冲刺
+        function patternSuddenSprint(start) {
+            const segs = [];
+            const low = start || randomInRange(100, 115);
+            segs.push(segHold(randomInRange(60, 150), low));
+            const peak = randomInRange(178, 210);
+            segs.push(segInstant(low, peak));
+            segs.push(segHold(randomInRange(30, 70), peak));
+            segs.push(segLinear(randomInRange(5, 15), peak, randomInRange(110, 130)));
+            return segs;
+        }
+        // 模式 3：波浪振荡
+        function patternWave(start) {
+            const segs = [];
+            let c = start || randomInRange(118, 135);
+            const cycles = Math.floor(randomInRange(3, 6));
+            for (let i = 0; i < cycles; i++) {
+                const hi = randomInRange(150, 172);
+                segs.push(segEase(randomInRange(25, 50), c, hi));
+                const lo = randomInRange(115, 135);
+                segs.push(segEase(randomInRange(25, 50), hi, lo));
+                c = lo;
+            }
+            segs.push(segLinear(randomInRange(20, 40), c, randomInRange(175, 195)));
+            return segs;
+        }
+        // 模式 4：多重峰（每次越来越高）
+        function patternMultiPeak(start) {
+            const segs = [];
+            let base = start || randomInRange(105, 120);
+            const peaks = [randomInRange(138, 152), randomInRange(158, 172), randomInRange(180, 200)];
+            for (const peak of peaks) {
+                segs.push(segLinear(randomInRange(35, 75), base, peak));
+                segs.push(segHold(randomInRange(8, 22), peak));
+                const next = randomInRange(108, 128);
+                segs.push(segLinear(randomInRange(12, 28), peak, next));
+                base = next;
+            }
+            return segs;
+        }
+        // 模式 5：长时间高频持续
+        function patternSustainedHigh(start) {
+            const segs = [];
+            const c = start || randomInRange(120, 140);
+            const sustain = randomInRange(172, 188);
+            segs.push(segLinear(randomInRange(15, 30), c, sustain));
+            segs.push(segHold(randomInRange(180, 360), sustain));
+            segs.push(segLinear(randomInRange(30, 60), sustain, randomInRange(108, 128)));
+            return segs;
+        }
+        // 模式 6：山谷（突然下降 -> 爬回来）
+        function patternLowValley(start) {
+            const segs = [];
+            const c = start || randomInRange(130, 150);
+            segs.push(segHold(randomInRange(20, 40), c));
+            const low = randomInRange(95, 108);
+            segs.push(segInstant(c, low));
+            segs.push(segHold(randomInRange(25, 55), low));
+            segs.push(segLinear(randomInRange(10, 20), low, randomInRange(175, 200)));
+            segs.push(segHold(randomInRange(20, 60), 185));
+            return segs;
+        }
+        // 模式 7：过山车（不可预测的多次跳跃）
+        function patternRollerCoaster(start) {
+            const segs = [];
+            let c = start || randomInRange(110, 130);
+            const steps = Math.floor(randomInRange(5, 9));
+            for (let i = 0; i < steps; i++) {
+                const next = randomInRange(100, 200);
+                const r = Math.random();
+                if (r < 0.35) {
+                    segs.push(segInstant(c, next));
+                    segs.push(segHold(randomInRange(5, 20), next));
+                } else if (r < 0.75) {
+                    segs.push(segLinear(randomInRange(12, 35), c, next));
+                } else {
+                    segs.push(segEase(randomInRange(18, 45), c, next));
+                }
+                c = next;
+            }
+            return segs;
+        }
+        // 模式 8：方波快切（120/180 反复跳）
+        function patternSquareWave(start) {
+            const segs = [];
+            const low = randomInRange(105, 125);
+            const high = randomInRange(170, 200);
+            const flips = Math.floor(randomInRange(4, 9));
+            let atLow = true;
+            for (let i = 0; i < flips; i++) {
+                const dur = randomInRange(8, 22);
+                if (atLow) {
+                    segs.push(segHold(dur, low));
+                    segs.push(segInstant(low, high));
+                } else {
+                    segs.push(segHold(dur, high));
+                    segs.push(segInstant(high, low));
+                }
+                atLow = !atLow;
+            }
+            segs.push(segHold(randomInRange(10, 30), atLow ? low : high));
+            return segs;
+        }
+        // 模式 9：后段冲刺
+        function patternLateSprint(start) {
+            const segs = [];
+            const base = start || randomInRange(115, 135);
+            segs.push(segHold(randomInRange(120, 240), base));
+            segs.push(segLinear(randomInRange(25, 50), base, randomInRange(160, 175)));
+            segs.push(segLinear(randomInRange(8, 18), 170, randomInRange(188, 210)));
+            segs.push(segHold(randomInRange(25, 55), 195));
+            return segs;
+        }
+        // 模式 10：跳上跳下
+        function patternJumpAndBack(start) {
+            const segs = [];
+            const base = start || randomInRange(115, 135);
+            segs.push(segHold(randomInRange(25, 55), base));
+            const hi = randomInRange(175, 200);
+            segs.push(segInstant(base, hi));
+            segs.push(segHold(randomInRange(15, 40), hi));
+            segs.push(segInstant(hi, base));
+            segs.push(segHold(randomInRange(25, 55), base));
+            return segs;
+        }
+        // 模式 11：攀爬中途突然跳到最高
+        function patternClimbThenBurst(start) {
+            const segs = [];
+            let c = start || randomInRange(100, 115);
+            segs.push(segHold(randomInRange(15, 35), c));
+            const mid = randomInRange(118, 135);
+            segs.push(segLinear(randomInRange(60, 120), c, mid));
+            const burst = randomInRange(185, 210);
+            segs.push(segInstant(mid, burst));
+            segs.push(segHold(randomInRange(20, 40), burst));
+            segs.push(segInstant(burst, randomInRange(105, 120)));
+            segs.push(segHold(randomInRange(20, 40), 115));
+            return segs;
+        }
+
+        const TEMPO_PATTERNS = [
+            patternGradualClimb,
+            patternSuddenSprint,
+            patternWave,
+            patternMultiPeak,
+            patternSustainedHigh,
+            patternLowValley,
+            patternRollerCoaster,
+            patternSquareWave,
+            patternLateSprint,
+            patternJumpAndBack,
+            patternClimbThenBurst
+        ];
+
+        function appendNewPattern() {
+            const last = tempoSchedule.length
+                ? tempoSchedule[tempoSchedule.length - 1].toCPM
+                : randomInRange(105, 130);
+            const fn = TEMPO_PATTERNS[Math.floor(Math.random() * TEMPO_PATTERNS.length)];
+            const segs = fn(last);
+            tempoSchedule.push(...segs);
+        }
+
+        function getCPMAtElapsed(elapsed) {
+            let total = 0;
+            for (const seg of tempoSchedule) total += seg.duration;
+            while (elapsed >= total) {
+                appendNewPattern();
+                total = 0;
+                for (const seg of tempoSchedule) total += seg.duration;
+            }
+            let t = 0;
+            for (const seg of tempoSchedule) {
+                if (elapsed < t + seg.duration) {
+                    const p = Math.min(1, Math.max(0, (elapsed - t) / seg.duration));
+                    if (seg.curve === 'hold') return seg.fromCPM;
+                    if (seg.curve === 'instant') return p > 0 ? seg.toCPM : seg.fromCPM;
+                    if (seg.curve === 'linear') return seg.fromCPM + (seg.toCPM - seg.fromCPM) * p;
+                    if (seg.curve === 'ease') {
+                        const e = p * p * (3 - 2 * p);
+                        return seg.fromCPM + (seg.toCPM - seg.fromCPM) * e;
+                    }
+                }
+                t += seg.duration;
+            }
+            return 120;
+        }
+
+        function playClick(time, isAccent) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (isAccent) {
+                // 重音：更高、更响、带噪声冲击
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1700, time);
+                osc.frequency.exponentialRampToValueAtTime(650, time + 0.04);
+                gain.gain.setValueAtTime(0.0001, time);
+                gain.gain.exponentialRampToValueAtTime(0.38, time + 0.002);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
+                osc.start(time);
+                osc.stop(time + 0.1);
+
+                // 噪声冲击
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * 0.03);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+                }
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buf;
+                const ng = audioCtx.createGain();
+                ng.gain.setValueAtTime(0.18, time);
+                noise.connect(ng);
+                ng.connect(audioCtx.destination);
+                noise.start(time);
+                noise.stop(time + 0.03);
+            } else {
+                // 普通音：更柔和、音调低
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(950, time);
+                osc.frequency.exponentialRampToValueAtTime(520, time + 0.03);
+                gain.gain.setValueAtTime(0.0001, time);
+                gain.gain.exponentialRampToValueAtTime(0.18, time + 0.002);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.06);
+                osc.start(time);
+                osc.stop(time + 0.08);
+            }
+        }
+
+        function scheduleBeatVisual(time, isAccent) {
+            if (!audioCtx) return;
+            const delay = Math.max(0, (time - audioCtx.currentTime) * 1000);
+            setTimeout(() => flashBeatDot(isAccent), delay);
+        }
+
+        function flashBeatDot(isAccent) {
+            const dot = isAccent ? beatDotAccent : beatDotNormal;
+            const cls = isAccent ? 'flash-accent' : 'flash-normal';
+            dot.classList.remove(cls);
+            void dot.offsetWidth;
+            dot.classList.add(cls);
+        }
+
+        function updateBreathDuration(cpm) {
+            const dur = 60 / cpm;
+            if (Math.abs(dur - lastBreathDuration) > 0.04) {
+                document.documentElement.style.setProperty('--breath-duration', dur.toFixed(3) + 's');
+                lastBreathDuration = dur;
+            }
+        }
+
+        function metroTick() {
+            if (!metroActive || !audioCtx) return;
+            while (nextBeatTime < audioCtx.currentTime + LOOKAHEAD) {
+                const elapsed = nextBeatTime - scheduleStartTime;
+                const cpm = getCPMAtElapsed(elapsed);
+                const isAccent = (beatCounter % 2 === 0);
+                playClick(nextBeatTime, isAccent);
+                scheduleBeatVisual(nextBeatTime, isAccent);
+                updateBreathDuration(cpm);
+                nextBeatTime += 30 / cpm;
+                beatCounter++;
+            }
+        }
+
+        function startMetronome() {
+            if (metroActive) return;
+            const ctx = ensureAudio();
+            if (!ctx) return;
+            metroActive = true;
+            tempoSchedule = [];
+            beatCounter = 0;
+            nextBeatTime = ctx.currentTime + 0.1;
+            scheduleStartTime = nextBeatTime;
+            appendNewPattern();
+            beatDotsEl.classList.remove('hidden');
+            metroSchedulerId = setInterval(metroTick, SCHED_INTERVAL);
+        }
+
+        function stopMetronome() {
+            metroActive = false;
+            if (metroSchedulerId) clearInterval(metroSchedulerId);
+            metroSchedulerId = null;
+            tempoSchedule = [];
+            beatDotsEl.classList.add('hidden');
+            document.documentElement.style.setProperty('--breath-duration', '2s');
+            lastBreathDuration = -1;
+        }
+
+        // ---- 挂钩计时循环 ----
+        const _origStartTimer = startTimer;
+        startTimer = function() {
+            _origStartTimer();
+            if (isCoolingDown) {
+                stopMetronome();
+            } else {
+                startMetronome();
+            }
+        };
+
+        const _origStopTimer = stopTimer;
+        stopTimer = function() {
+            _origStopTimer();
+            stopMetronome();
         };
     </script>
 </body>
