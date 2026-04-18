@@ -533,6 +533,20 @@
         .beat-dot.flash-normal {
             animation: beat-flash-normal 140ms ease-out;
         }
+
+        /* 休息（0 BPM 静默）：呼吸光与指示点淡化 */
+        .focus-glow {
+            transition: opacity 600ms ease-out;
+        }
+        .focus-glow.resting {
+            opacity: 0.2;
+        }
+        .beat-dots {
+            transition: opacity 500ms ease-out;
+        }
+        .beat-dots.resting {
+            opacity: 0.18;
+        }
     </style>
 </head>
 
@@ -1301,182 +1315,370 @@
             return { duration: 0.01, fromCPM: a, toCPM: b, curve: 'instant' };
         }
 
-        // ---- 模式库（多种有趣曲线） ----
-        // 模式 1：缓慢爬升 -> 平台 -> 最终冲刺 -> 下降
-        function patternGradualClimb(start) {
-            const segs = [];
-            let c = start || randomInRange(100, 118);
-            segs.push(segHold(randomInRange(20, 45), c));
-            const p1 = randomInRange(145, 165);
-            segs.push(segLinear(randomInRange(150, 270), c, p1));
-            segs.push(segHold(randomInRange(30, 60), p1));
-            const p2 = randomInRange(178, 200);
-            segs.push(segLinear(randomInRange(15, 30), p1, p2));
-            segs.push(segHold(randomInRange(20, 50), p2));
-            segs.push(segLinear(randomInRange(30, 60), p2, randomInRange(100, 125)));
-            return segs;
+        // ---- BPM 桶（5 档，彻底随机化的基础） ----
+        const BUCKETS = [
+            { name: 'low',    min: 120, max: 150 },  // 低
+            { name: 'midLo',  min: 150, max: 180 },  // 中低
+            { name: 'midHi',  min: 180, max: 210 },  // 中高
+            { name: 'sprint', min: 210, max: 240 },  // 冲刺
+            { name: 'burst',  min: 240, max: 260 }   // 爆发（稀有）
+        ];
+        const DEFAULT_W = [0.24, 0.26, 0.22, 0.16, 0.12];
+
+        function pickInBucket(b) {
+            return randomInRange(b.min, b.max);
         }
-        // 模式 2：长时间低速 -> 突然冲刺
-        function patternSuddenSprint(start) {
-            const segs = [];
-            const low = start || randomInRange(100, 115);
-            segs.push(segHold(randomInRange(60, 150), low));
-            const peak = randomInRange(178, 210);
-            segs.push(segInstant(low, peak));
-            segs.push(segHold(randomInRange(30, 70), peak));
-            segs.push(segLinear(randomInRange(5, 15), peak, randomInRange(110, 130)));
-            return segs;
+        function randInt(min, max) {
+            return Math.floor(randomInRange(min, max + 1));
         }
-        // 模式 3：波浪振荡
+        function pickBucket(weights) {
+            const w = weights || DEFAULT_W;
+            let total = 0;
+            for (let i = 0; i < w.length; i++) total += w[i];
+            let r = Math.random() * total;
+            for (let i = 0; i < BUCKETS.length; i++) {
+                r -= w[i];
+                if (r <= 0) return BUCKETS[i];
+            }
+            return BUCKETS[BUCKETS.length - 1];
+        }
+        function randCurve() {
+            const r = Math.random();
+            if (r < 0.5) return 'linear';
+            if (r < 0.85) return 'ease';
+            return 'instant';
+        }
+        // 常用段时长（全部 ≥10s 保证节奏可辨）
+        function holdSeg(target, min, max) {
+            return segHold(randomInRange(min || 12, max || 45), target);
+        }
+        function transSeg(from, to, min, max, curve) {
+            const c = curve || randCurve();
+            if (c === 'instant') return segInstant(from, to);
+            return { duration: randomInRange(min || 12, max || 35), fromCPM: from, toCPM: to, curve: c };
+        }
+
+        // ---- 模式库（17 种，全部随机化） ----
+        // 1. 波动：两个随机桶来回（cycles 随机、每次目标值重随）
         function patternWave(start) {
             const segs = [];
-            let c = start || randomInRange(118, 135);
-            const cycles = Math.floor(randomInRange(3, 6));
+            const b1 = pickBucket();
+            let b2 = pickBucket();
+            if (b2 === b1) b2 = pickBucket();
+            const cycles = randInt(3, 8);
+            let c = start || pickInBucket(b1);
             for (let i = 0; i < cycles; i++) {
-                const hi = randomInRange(150, 172);
-                segs.push(segEase(randomInRange(25, 50), c, hi));
-                const lo = randomInRange(115, 135);
-                segs.push(segEase(randomInRange(25, 50), hi, lo));
-                c = lo;
+                const target = pickInBucket(i % 2 === 0 ? b2 : b1);
+                const curve = Math.random() < 0.65 ? 'ease' : 'linear';
+                segs.push({ duration: randomInRange(15, 45), fromCPM: c, toCPM: target, curve });
+                c = target;
             }
-            segs.push(segLinear(randomInRange(20, 40), c, randomInRange(175, 195)));
             return segs;
         }
-        // 模式 4：多重峰（每次越来越高）
+        // 2. 上升：从低/中低 爬到 中高/冲刺/爆发
+        function patternRising(start) {
+            const segs = [];
+            const startIdx = randInt(0, 2);
+            const endIdx = randInt(Math.max(startIdx + 1, 2), 4);
+            let c = start || pickInBucket(BUCKETS[startIdx]);
+            if (Math.random() < 0.5) segs.push(holdSeg(c, 15, 40));
+            for (let i = startIdx + 1; i <= endIdx; i++) {
+                const target = pickInBucket(BUCKETS[i]);
+                segs.push(transSeg(c, target, 12, 40));
+                if (Math.random() < 0.55) segs.push(holdSeg(target, 12, 45));
+                c = target;
+            }
+            return segs;
+        }
+        // 3. 下降：从高处逐步掉回
+        function patternFalling(start) {
+            const segs = [];
+            const startIdx = randInt(2, 4);
+            const endIdx = randInt(0, Math.min(startIdx - 1, 2));
+            let c = start || pickInBucket(BUCKETS[startIdx]);
+            if (Math.random() < 0.5) segs.push(holdSeg(c, 15, 40));
+            for (let i = startIdx - 1; i >= endIdx; i--) {
+                const target = pickInBucket(BUCKETS[i]);
+                segs.push(transSeg(c, target, 12, 40));
+                if (Math.random() < 0.55) segs.push(holdSeg(target, 12, 45));
+                c = target;
+            }
+            return segs;
+        }
+        // 4. 方波：每次翻转都重新从桶里随机挑值
+        function patternSquare(start) {
+            const segs = [];
+            const flips = randInt(4, 10);
+            let useHigh = Math.random() < 0.5;
+            let c = start || pickInBucket(pickBucket());
+            for (let i = 0; i < flips; i++) {
+                const bucket = useHigh
+                    ? pickBucket([0, 0, 0.25, 0.35, 0.40])  // 高侧：中高/冲刺/爆发
+                    : pickBucket([0.50, 0.40, 0.10, 0, 0]); // 低侧：低/中低
+                const target = pickInBucket(bucket);
+                segs.push(segInstant(c, target));
+                segs.push(holdSeg(target, 12, 30));
+                c = target;
+                useHigh = !useHigh;
+            }
+            return segs;
+        }
+        // 5. 急速切换：更短周期（仍 ≥10s）
+        function patternRapidSwitch(start) {
+            const segs = [];
+            const flips = randInt(6, 12);
+            let useHigh = Math.random() < 0.5;
+            let c = start || pickInBucket(pickBucket());
+            for (let i = 0; i < flips; i++) {
+                const bucket = useHigh
+                    ? pickBucket([0, 0, 0.3, 0.4, 0.3])
+                    : pickBucket([0.6, 0.35, 0.05, 0, 0]);
+                const target = pickInBucket(bucket);
+                segs.push(segInstant(c, target));
+                segs.push(segHold(randomInRange(10, 15), target));
+                c = target;
+                useHigh = !useHigh;
+            }
+            return segs;
+        }
+        // 6. 多峰：峰数 2-5 随机，每峰值独立随机
         function patternMultiPeak(start) {
             const segs = [];
-            let base = start || randomInRange(105, 120);
-            const peaks = [randomInRange(138, 152), randomInRange(158, 172), randomInRange(180, 200)];
-            for (const peak of peaks) {
-                segs.push(segLinear(randomInRange(35, 75), base, peak));
-                segs.push(segHold(randomInRange(8, 22), peak));
-                const next = randomInRange(108, 128);
-                segs.push(segLinear(randomInRange(12, 28), peak, next));
-                base = next;
+            const peakCount = randInt(2, 5);
+            let base = start || pickInBucket(BUCKETS[0]);
+            for (let i = 0; i < peakCount; i++) {
+                const peak = pickInBucket(pickBucket([0, 0.10, 0.25, 0.30, 0.35]));
+                segs.push({ duration: randomInRange(15, 40), fromCPM: base, toCPM: peak, curve: Math.random() < 0.5 ? 'linear' : 'ease' });
+                segs.push(holdSeg(peak, 12, 28));
+                base = pickInBucket(pickBucket([0.55, 0.35, 0.10, 0, 0]));
+                segs.push({ duration: randomInRange(12, 30), fromCPM: peak, toCPM: base, curve: Math.random() < 0.5 ? 'linear' : 'ease' });
             }
             return segs;
         }
-        // 模式 5：长时间高频持续
-        function patternSustainedHigh(start) {
+        // 7. 山谷：高 → 低 → 高
+        function patternValley(start) {
             const segs = [];
-            const c = start || randomInRange(120, 140);
-            const sustain = randomInRange(172, 188);
-            segs.push(segLinear(randomInRange(15, 30), c, sustain));
-            segs.push(segHold(randomInRange(180, 360), sustain));
-            segs.push(segLinear(randomInRange(30, 60), sustain, randomInRange(108, 128)));
+            const highBucket = pickBucket([0, 0, 0.3, 0.35, 0.35]);
+            const lowBucket = pickBucket([0.7, 0.3, 0, 0, 0]);
+            let c = start || pickInBucket(highBucket);
+            segs.push(holdSeg(c, 20, 45));
+            const low = pickInBucket(lowBucket);
+            segs.push(Math.random() < 0.5 ? segInstant(c, low) : { duration: randomInRange(12, 25), fromCPM: c, toCPM: low, curve: 'linear' });
+            segs.push(holdSeg(low, 20, 50));
+            const high2 = pickInBucket(highBucket);
+            segs.push(Math.random() < 0.5 ? segInstant(low, high2) : { duration: randomInRange(10, 25), fromCPM: low, toCPM: high2, curve: 'ease' });
+            segs.push(holdSeg(high2, 15, 40));
             return segs;
         }
-        // 模式 6：山谷（突然下降 -> 爬回来）
-        function patternLowValley(start) {
+        // 8. 山峰：低 → 高 → 低（回落点也重新随机）
+        function patternPeak(start) {
             const segs = [];
-            const c = start || randomInRange(130, 150);
-            segs.push(segHold(randomInRange(20, 40), c));
-            const low = randomInRange(95, 108);
-            segs.push(segInstant(c, low));
-            segs.push(segHold(randomInRange(25, 55), low));
-            segs.push(segLinear(randomInRange(10, 20), low, randomInRange(175, 200)));
-            segs.push(segHold(randomInRange(20, 60), 185));
+            const lowBucket = pickBucket([0.6, 0.4, 0, 0, 0]);
+            const highBucket = pickBucket([0, 0, 0.25, 0.35, 0.40]);
+            let c = start || pickInBucket(lowBucket);
+            segs.push(holdSeg(c, 25, 60));
+            const high = pickInBucket(highBucket);
+            segs.push({ duration: randomInRange(15, 40), fromCPM: c, toCPM: high, curve: 'ease' });
+            segs.push(holdSeg(high, 20, 50));
+            const newLow = pickInBucket(lowBucket);
+            segs.push({ duration: randomInRange(15, 40), fromCPM: high, toCPM: newLow, curve: Math.random() < 0.5 ? 'linear' : 'ease' });
             return segs;
         }
-        // 模式 7：过山车（不可预测的多次跳跃）
+        // 9. 长停留：任意桶长时间持续
+        function patternSustained(start) {
+            const bucket = pickBucket();
+            const target = pickInBucket(bucket);
+            const segs = [];
+            let c = start || target;
+            if (Math.abs(c - target) > 5) {
+                segs.push({ duration: randomInRange(15, 30), fromCPM: c, toCPM: target, curve: 'ease' });
+            }
+            segs.push(segHold(randomInRange(90, 240), target));
+            const exit = pickInBucket(pickBucket());
+            segs.push({ duration: randomInRange(15, 30), fromCPM: target, toCPM: exit, curve: 'linear' });
+            return segs;
+        }
+        // 10. 过山车：随机游走全部桶，每段 ≥10s
         function patternRollerCoaster(start) {
             const segs = [];
-            let c = start || randomInRange(110, 130);
-            const steps = Math.floor(randomInRange(5, 9));
+            const steps = randInt(5, 10);
+            let c = start || pickInBucket(pickBucket());
             for (let i = 0; i < steps; i++) {
-                const next = randomInRange(100, 200);
+                const target = pickInBucket(pickBucket());
                 const r = Math.random();
-                if (r < 0.35) {
-                    segs.push(segInstant(c, next));
-                    segs.push(segHold(randomInRange(5, 20), next));
-                } else if (r < 0.75) {
-                    segs.push(segLinear(randomInRange(12, 35), c, next));
+                if (r < 0.30) {
+                    segs.push(segInstant(c, target));
+                    segs.push(holdSeg(target, 10, 25));
+                } else if (r < 0.70) {
+                    segs.push({ duration: randomInRange(12, 30), fromCPM: c, toCPM: target, curve: 'linear' });
+                    if (Math.random() < 0.4) segs.push(holdSeg(target, 10, 25));
                 } else {
-                    segs.push(segEase(randomInRange(18, 45), c, next));
+                    segs.push({ duration: randomInRange(15, 35), fromCPM: c, toCPM: target, curve: 'ease' });
+                    if (Math.random() < 0.4) segs.push(holdSeg(target, 10, 25));
                 }
-                c = next;
+                c = target;
             }
             return segs;
         }
-        // 模式 8：方波快切（120/180 反复跳）
-        function patternSquareWave(start) {
+        // 11. 阶梯（上升或下降，一桶一级）
+        function patternStairs(start) {
             const segs = [];
-            const low = randomInRange(105, 125);
-            const high = randomInRange(170, 200);
-            const flips = Math.floor(randomInRange(4, 9));
-            let atLow = true;
-            for (let i = 0; i < flips; i++) {
-                const dur = randomInRange(8, 22);
-                if (atLow) {
-                    segs.push(segHold(dur, low));
-                    segs.push(segInstant(low, high));
-                } else {
-                    segs.push(segHold(dur, high));
-                    segs.push(segInstant(high, low));
+            const ascending = Math.random() < 0.5;
+            const startIdx = ascending ? randInt(0, 1) : randInt(3, 4);
+            const endIdx = ascending ? randInt(3, 4) : randInt(0, 1);
+            const step = ascending ? 1 : -1;
+            let c = start || pickInBucket(BUCKETS[startIdx]);
+            for (let i = startIdx; ascending ? i <= endIdx : i >= endIdx; i += step) {
+                const target = pickInBucket(BUCKETS[i]);
+                if (i !== startIdx || Math.abs(c - target) > 5) {
+                    segs.push(segInstant(c, target));
                 }
-                atLow = !atLow;
+                segs.push(segHold(randomInRange(15, 35), target));
+                c = target;
             }
-            segs.push(segHold(randomInRange(10, 30), atLow ? low : high));
             return segs;
         }
-        // 模式 9：后段冲刺
-        function patternLateSprint(start) {
+        // 12. 假动作：建势 → 回落 → 真冲刺
+        function patternFakeout(start) {
             const segs = [];
-            const base = start || randomInRange(115, 135);
-            segs.push(segHold(randomInRange(120, 240), base));
-            segs.push(segLinear(randomInRange(25, 50), base, randomInRange(160, 175)));
-            segs.push(segLinear(randomInRange(8, 18), 170, randomInRange(188, 210)));
-            segs.push(segHold(randomInRange(25, 55), 195));
+            let c = start || pickInBucket(BUCKETS[0]);
+            segs.push(holdSeg(c, 20, 40));
+            const fakePeak = pickInBucket(BUCKETS[2]);
+            segs.push({ duration: randomInRange(15, 30), fromCPM: c, toCPM: fakePeak, curve: 'ease' });
+            const dip = pickInBucket(pickBucket([0.5, 0.5, 0, 0, 0]));
+            segs.push({ duration: randomInRange(15, 30), fromCPM: fakePeak, toCPM: dip, curve: 'linear' });
+            segs.push(holdSeg(dip, 20, 45));
+            const realPeak = pickInBucket(pickBucket([0, 0, 0, 0.4, 0.6]));
+            segs.push({ duration: randomInRange(10, 25), fromCPM: dip, toCPM: realPeak, curve: 'linear' });
+            segs.push(holdSeg(realPeak, 20, 50));
             return segs;
         }
-        // 模式 10：跳上跳下
-        function patternJumpAndBack(start) {
+        // 13. 爆发频繁：中频基底 + 多次短爆发尖峰
+        function patternBurstHeavy(start) {
             const segs = [];
-            const base = start || randomInRange(115, 135);
-            segs.push(segHold(randomInRange(25, 55), base));
-            const hi = randomInRange(175, 200);
-            segs.push(segInstant(base, hi));
-            segs.push(segHold(randomInRange(15, 40), hi));
-            segs.push(segInstant(hi, base));
-            segs.push(segHold(randomInRange(25, 55), base));
+            const baseBucket = pickBucket([0.3, 0.4, 0.3, 0, 0]);
+            const spikeCount = randInt(3, 6);
+            let c = start || pickInBucket(baseBucket);
+            for (let i = 0; i < spikeCount; i++) {
+                const base = pickInBucket(baseBucket);
+                segs.push({ duration: randomInRange(10, 20), fromCPM: c, toCPM: base, curve: 'linear' });
+                segs.push(holdSeg(base, 15, 35));
+                const spike = pickInBucket(pickBucket([0, 0, 0, 0.35, 0.65]));
+                segs.push(segInstant(base, spike));
+                segs.push(segHold(randomInRange(10, 20), spike));
+                c = spike;
+            }
             return segs;
         }
-        // 模式 11：攀爬中途突然跳到最高
-        function patternClimbThenBurst(start) {
+        // 14. 回声：motif 重复 2-4 次，每次峰值独立随机
+        function patternEcho(start) {
             const segs = [];
-            let c = start || randomInRange(100, 115);
-            segs.push(segHold(randomInRange(15, 35), c));
-            const mid = randomInRange(118, 135);
-            segs.push(segLinear(randomInRange(60, 120), c, mid));
-            const burst = randomInRange(185, 210);
-            segs.push(segInstant(mid, burst));
-            segs.push(segHold(randomInRange(20, 40), burst));
-            segs.push(segInstant(burst, randomInRange(105, 120)));
-            segs.push(segHold(randomInRange(20, 40), 115));
+            const repeats = randInt(2, 4);
+            let c = start || pickInBucket(BUCKETS[0]);
+            for (let i = 0; i < repeats; i++) {
+                const low = pickInBucket(pickBucket([0.5, 0.5, 0, 0, 0]));
+                const peak = pickInBucket(pickBucket([0, 0, 0.25, 0.35, 0.40]));
+                segs.push({ duration: randomInRange(15, 30), fromCPM: c, toCPM: low, curve: 'linear' });
+                segs.push(holdSeg(low, 12, 25));
+                segs.push({ duration: randomInRange(15, 30), fromCPM: low, toCPM: peak, curve: 'ease' });
+                segs.push(holdSeg(peak, 12, 25));
+                c = peak;
+            }
+            return segs;
+        }
+        // 15. 分型爬升：进两步退一步，逐步推高
+        function patternFractalClimb(start) {
+            const segs = [];
+            let current = start || pickInBucket(BUCKETS[0]);
+            const steps = randInt(3, 6);
+            for (let i = 0; i < steps; i++) {
+                const up = Math.min(260, current + randomInRange(15, 35));
+                segs.push({ duration: randomInRange(12, 25), fromCPM: current, toCPM: up, curve: 'linear' });
+                segs.push(segHold(randomInRange(10, 20), up));
+                const down = Math.max(120, up - randomInRange(8, 20));
+                segs.push({ duration: randomInRange(10, 20), fromCPM: up, toCPM: down, curve: 'linear' });
+                segs.push(segHold(randomInRange(10, 20), down));
+                current = down;
+            }
+            return segs;
+        }
+        // 16. 彩蛋：持续爆发 2-5 分钟
+        function patternSustainedBurst(start) {
+            const segs = [];
+            const burstVal = pickInBucket(BUCKETS[4]);
+            let c = start || pickInBucket(BUCKETS[0]);
+            segs.push({ duration: randomInRange(10, 20), fromCPM: c, toCPM: burstVal, curve: 'linear' });
+            segs.push(segHold(randomInRange(120, 300), burstVal));
+            segs.push({ duration: randomInRange(20, 40), fromCPM: burstVal, toCPM: pickInBucket(BUCKETS[1]), curve: 'linear' });
+            return segs;
+        }
+        // 17. 彩蛋：持续极低 2-4 分钟
+        function patternSustainedLow(start) {
+            const segs = [];
+            let c = start || pickInBucket(BUCKETS[2]);
+            const lowVal = pickInBucket(BUCKETS[0]);
+            segs.push({ duration: randomInRange(15, 30), fromCPM: c, toCPM: lowVal, curve: 'linear' });
+            segs.push(segHold(randomInRange(120, 240), lowVal));
             return segs;
         }
 
+        // 带权模式池（彩蛋稀有）
         const TEMPO_PATTERNS = [
-            patternGradualClimb,
-            patternSuddenSprint,
-            patternWave,
-            patternMultiPeak,
-            patternSustainedHigh,
-            patternLowValley,
-            patternRollerCoaster,
-            patternSquareWave,
-            patternLateSprint,
-            patternJumpAndBack,
-            patternClimbThenBurst
+            { fn: patternWave,           w: 10 },
+            { fn: patternRising,         w: 9  },
+            { fn: patternFalling,        w: 8  },
+            { fn: patternSquare,         w: 8  },
+            { fn: patternRapidSwitch,    w: 6  },
+            { fn: patternMultiPeak,      w: 8  },
+            { fn: patternValley,         w: 7  },
+            { fn: patternPeak,           w: 7  },
+            { fn: patternSustained,      w: 6  },
+            { fn: patternRollerCoaster,  w: 9  },
+            { fn: patternStairs,         w: 7  },
+            { fn: patternFakeout,        w: 6  },
+            { fn: patternBurstHeavy,     w: 7  },
+            { fn: patternEcho,           w: 5  },
+            { fn: patternFractalClimb,   w: 6  },
+            { fn: patternSustainedBurst, w: 2  },  // 稀有彩蛋
+            { fn: patternSustainedLow,   w: 1  }   // 更稀有彩蛋
         ];
 
         function appendNewPattern() {
             const last = tempoSchedule.length
                 ? tempoSchedule[tempoSchedule.length - 1].toCPM
-                : randomInRange(105, 130);
-            const fn = TEMPO_PATTERNS[Math.floor(Math.random() * TEMPO_PATTERNS.length)];
+                : randomInRange(140, 180);
+            let total = 0;
+            for (const p of TEMPO_PATTERNS) total += p.w;
+            let r = Math.random() * total;
+            let fn = TEMPO_PATTERNS[0].fn;
+            for (const p of TEMPO_PATTERNS) {
+                r -= p.w;
+                if (r <= 0) { fn = p.fn; break; }
+            }
             const segs = fn(last);
             tempoSchedule.push(...segs);
+            maybeAppendRest();
+        }
+
+        // 休息段（0 BPM）：高频收尾后概率插入，最长 30s
+        function maybeAppendRest() {
+            if (tempoSchedule.length === 0) return;
+            const lastSeg = tempoSchedule[tempoSchedule.length - 1];
+            if (lastSeg.curve === 'rest') return;
+            const lastCPM = lastSeg.toCPM;
+            let chance = 0.025;
+            if (lastCPM > 230) chance = 0.30;
+            else if (lastCPM > 210) chance = 0.18;
+            else if (lastCPM > 180) chance = 0.08;
+            else if (lastCPM > 160) chance = 0.04;
+            if (Math.random() < chance) {
+                tempoSchedule.push({
+                    duration: randomInRange(10, 30),
+                    fromCPM: 0,
+                    toCPM: 0,
+                    curve: 'rest'
+                });
+            }
         }
 
         function getCPMAtElapsed(elapsed) {
@@ -1491,6 +1693,7 @@
             for (const seg of tempoSchedule) {
                 if (elapsed < t + seg.duration) {
                     const p = Math.min(1, Math.max(0, (elapsed - t) / seg.duration));
+                    if (seg.curve === 'rest') return 0;
                     if (seg.curve === 'hold') return seg.fromCPM;
                     if (seg.curve === 'instant') return p > 0 ? seg.toCPM : seg.fromCPM;
                     if (seg.curve === 'linear') return seg.fromCPM + (seg.toCPM - seg.fromCPM) * p;
@@ -1573,10 +1776,54 @@
             }
         }
 
+        let lastScheduledRestEnd = 0;
+        function setRestVisual(isResting) {
+            if (isResting) {
+                focusGlow.classList.add('resting');
+                beatDotsEl.classList.add('resting');
+            } else {
+                focusGlow.classList.remove('resting');
+                beatDotsEl.classList.remove('resting');
+            }
+        }
+
+        function findSegmentAt(elapsed) {
+            let total = 0;
+            for (const seg of tempoSchedule) total += seg.duration;
+            while (elapsed >= total) {
+                appendNewPattern();
+                total = 0;
+                for (const seg of tempoSchedule) total += seg.duration;
+            }
+            let t = 0;
+            for (const seg of tempoSchedule) {
+                if (elapsed < t + seg.duration) {
+                    return { seg, startT: t };
+                }
+                t += seg.duration;
+            }
+            return null;
+        }
+
         function metroTick() {
             if (!metroActive || !audioCtx) return;
             while (nextBeatTime < audioCtx.currentTime + LOOKAHEAD) {
                 const elapsed = nextBeatTime - scheduleStartTime;
+                const found = findSegmentAt(elapsed);
+                if (found && found.seg.curve === 'rest') {
+                    const restStart = scheduleStartTime + found.startT;
+                    const restEnd = restStart + found.seg.duration;
+                    if (Math.abs(restEnd - lastScheduledRestEnd) > 0.01) {
+                        lastScheduledRestEnd = restEnd;
+                        const delayOn = Math.max(0, (restStart - audioCtx.currentTime) * 1000);
+                        const delayOff = Math.max(0, (restEnd - audioCtx.currentTime) * 1000);
+                        setTimeout(() => { if (metroActive) setRestVisual(true); }, delayOn);
+                        setTimeout(() => { if (metroActive) setRestVisual(false); }, delayOff);
+                    }
+                    nextBeatTime = restEnd + 0.02;
+                    beatCounter = 0; // 休息后重新以重音开场
+                    continue;
+                }
                 const cpm = getCPMAtElapsed(elapsed);
                 const isAccent = (beatCounter % 2 === 0);
                 playClick(nextBeatTime, isAccent);
@@ -1609,6 +1856,8 @@
             beatDotsEl.classList.add('hidden');
             document.documentElement.style.setProperty('--breath-duration', '2s');
             lastBreathDuration = -1;
+            lastScheduledRestEnd = 0;
+            setRestVisual(false);
         }
 
         // ---- 挂钩计时循环 ----
