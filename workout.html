@@ -152,6 +152,11 @@
             color: #ffffff;
         }
 
+        .wide-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
         .timer {
             display: grid;
             gap: 14px;
@@ -394,7 +399,8 @@
                     <button id="start-btn" class="primary" disabled>开始</button>
                     <button id="pause-btn" class="secondary" disabled>暂停</button>
                 </div>
-                <button id="reset-btn" class="danger" disabled>停止</button>
+                <button id="skip-btn" class="secondary wide-btn" disabled>跳过阶段</button>
+                <button id="reset-btn" class="danger wide-btn" disabled>停止</button>
             </section>
         </div>
 
@@ -437,7 +443,7 @@
             }
         };
 
-        const restOptions = [45, 60, 90];
+        const restOptions = [30, 45, 60];
         const targetInput = document.getElementById('target-minutes');
         const generateBtn = document.getElementById('generate-btn');
         const regenerateBtn = document.getElementById('regenerate-btn');
@@ -451,6 +457,7 @@
         const jumpProgressEl = document.getElementById('jump-progress');
         const startBtn = document.getElementById('start-btn');
         const pauseBtn = document.getElementById('pause-btn');
+        const skipBtn = document.getElementById('skip-btn');
         const resetBtn = document.getElementById('reset-btn');
 
         let activities = [];
@@ -602,7 +609,7 @@
                     ? '休息'
                     : `${item.type} ${item.name}${item.reps ? ` · ${item.reps}次` : ''}`;
                 const subtitle = item.kind === 'rest'
-                    ? '45s / 60s / 90s 随机休息'
+                    ? '30s / 45s / 60s 随机休息'
                     : `${item.name} · 第 ${countExerciseBefore(index) + 1} 组`;
                 const stateClass = index < currentIndex ? 'done' : (index === currentIndex && running ? 'active' : '');
                 return `
@@ -631,6 +638,7 @@
             lastJumpRep = 0;
             pauseBtn.textContent = '暂停';
             pauseBtn.disabled = true;
+            skipBtn.disabled = true;
             startBtn.disabled = timeline.length === 0;
             updateCurrentDisplay();
             renderPlan();
@@ -676,6 +684,7 @@
             lastTickAt = performance.now();
             startBtn.disabled = true;
             pauseBtn.disabled = false;
+            skipBtn.disabled = false;
             pauseBtn.textContent = '暂停';
             tick();
             renderPlan();
@@ -736,6 +745,7 @@
             jumpProgressEl.style.display = 'none';
             startBtn.disabled = false;
             pauseBtn.disabled = true;
+            skipBtn.disabled = true;
             renderPlan();
             beep(1046, 0.18);
             setTimeout(() => beep(1318, 0.18), 180);
@@ -750,6 +760,16 @@
                 tick();
             } else {
                 stopTicker();
+            }
+        }
+
+        function skipCurrent() {
+            if (!running || currentIndex >= timeline.length) return;
+            currentRemaining = 0;
+            advanceItem();
+            updateCurrentDisplay();
+            if (!paused && running) {
+                lastTickAt = performance.now();
             }
         }
 
@@ -816,6 +836,7 @@
         regenerateBtn.addEventListener('click', createPlan);
         startBtn.addEventListener('click', startTimer);
         pauseBtn.addEventListener('click', togglePause);
+        skipBtn.addEventListener('click', skipCurrent);
         resetBtn.addEventListener('click', resetTimerState);
     </script>
 </body>
