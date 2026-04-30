@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运动计划计时器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f3f4f6;
+            color: #172033;
+        }
+
+        body.jump-flash {
+            animation: jumpFlash 180ms ease-out;
+        }
+
+        @keyframes jumpFlash {
+            0% {
+                background: #ffffff;
+            }
+
+            100% {
+                background: #f3f4f6;
+            }
+        }
+
+        .page {
+            width: min(1040px, calc(100vw - 32px));
+            margin: 0 auto;
+            padding: 28px 0;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 28px;
+            line-height: 1.2;
+        }
+
+        .back-link {
+            color: #2563eb;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            box-shadow: 0 12px 30px rgba(17, 24, 39, 0.08);
+            padding: 18px;
+        }
+
+        .form-row {
+            display: grid;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        label {
+            font-weight: 750;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            height: 46px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 18px;
+            font-weight: 750;
+            color: #172033;
+            background: #ffffff;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        button {
+            height: 46px;
+            border: 0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 120ms ease, background 160ms ease;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .primary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        .secondary {
+            background: #e2e8f0;
+            color: #172033;
+        }
+
+        .danger {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .timer {
+            display: grid;
+            gap: 14px;
+        }
+
+        .current-type {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: fit-content;
+            min-width: 84px;
+            height: 34px;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-weight: 850;
+            color: #ffffff;
+            background: #475569;
+        }
+
+        .current-type.a {
+            background: #2563eb;
+        }
+
+        .current-type.b {
+            background: #f97316;
+        }
+
+        .current-type.c {
+            background: #16a34a;
+        }
+
+        .current-type.rest {
+            background: #64748b;
+        }
+
+        .time-display {
+            font-variant-numeric: tabular-nums;
+            font-size: clamp(56px, 9vw, 96px);
+            line-height: 1;
+            font-weight: 950;
+            letter-spacing: 0;
+        }
+
+        .current-name {
+            min-height: 30px;
+            font-size: 22px;
+            font-weight: 850;
+        }
+
+        .meta {
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .progress-track {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #2563eb;
+            transition: width 160ms linear;
+        }
+
+        .jump-progress {
+            display: none;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .rep-dot {
+            height: 8px;
+            border-radius: 8px;
+            background: #d1d5db;
+        }
+
+        .rep-dot.done {
+            background: #16a34a;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .stat {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8fafc;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .plan-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 14px;
+            max-height: 58vh;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .plan-item {
+            display: grid;
+            grid-template-columns: 42px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            background: #ffffff;
+        }
+
+        .plan-item.active {
+            border-color: #2563eb;
+            box-shadow: inset 3px 0 0 #2563eb;
+        }
+
+        .plan-item.done {
+            opacity: 0.55;
+        }
+
+        .badge {
+            height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 950;
+            color: #ffffff;
+        }
+
+        .badge.a {
+            background: #2563eb;
+        }
+
+        .badge.b {
+            background: #f97316;
+        }
+
+        .badge.c {
+            background: #16a34a;
+        }
+
+        .badge.rest {
+            background: #64748b;
+        }
+
+        .item-title {
+            font-weight: 850;
+        }
+
+        .item-subtitle {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 650;
+            margin-top: 2px;
+        }
+
+        .item-time {
+            font-variant-numeric: tabular-nums;
+            font-weight: 900;
+            color: #334155;
+        }
+
+        .empty {
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 28px;
+            text-align: center;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        @media (max-width: 820px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <div class="topbar">
+            <h1>运动计划计时器</h1>
+            <a class="back-link" href="index.html">返回专注计时器</a>
+        </div>
+
+        <div class="layout">
+            <section class="panel">
+                <h2>生成计划</h2>
+                <div class="form-row">
+                    <label for="target-minutes">每类运动目标时间（分钟）</label>
+                    <input id="target-minutes" type="number" min="1" max="120" step="1" value="10">
+                </div>
+                <div class="button-row">
+                    <button id="generate-btn" class="primary">确定</button>
+                    <button id="regenerate-btn" class="secondary" disabled>重随</button>
+                </div>
+
+                <div class="stats" id="stats"></div>
+            </section>
+
+            <section class="panel timer">
+                <div>
+                    <span id="current-type" class="current-type">待开始</span>
+                </div>
+                <div id="time-display" class="time-display">00:00</div>
+                <div id="current-name" class="current-name">输入时间后生成计划</div>
+                <div id="current-meta" class="meta">A=压，B=耗，C=跳</div>
+                <div class="progress-track">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="jump-progress" class="jump-progress"></div>
+                <div class="button-row">
+                    <button id="start-btn" class="primary" disabled>开始</button>
+                    <button id="pause-btn" class="secondary" disabled>暂停</button>
+                </div>
+                <button id="reset-btn" class="danger" disabled>停止</button>
+            </section>
+        </div>
+
+        <section class="panel" style="margin-top:16px;">
+            <h2>计划</h2>
+            <div id="plan-list" class="plan-list">
+                <div class="empty">暂无计划</div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const exerciseConfig = {
+            A: {
+                name: '压',
+                options: [
+                    { seconds: 30, weight: 1 },
+                    { seconds: 60, weight: 3 },
+                    { seconds: 90, weight: 3 },
+                    { seconds: 120, weight: 1 }
+                ]
+            },
+            B: {
+                name: '耗',
+                options: [
+                    { seconds: 30, weight: 1 },
+                    { seconds: 45, weight: 2 },
+                    { seconds: 60, weight: 3 },
+                    { seconds: 90, weight: 2 },
+                    { seconds: 120, weight: 1 }
+                ]
+            },
+            C: {
+                name: '跳',
+                options: [
+                    { reps: 16, seconds: 48, weight: 1 },
+                    { reps: 32, seconds: 96, weight: 1 },
+                    { reps: 64, seconds: 192, weight: 1 }
+                ]
+            }
+        };
+
+        const restOptions = [45, 60, 90];
+        const targetInput = document.getElementById('target-minutes');
+        const generateBtn = document.getElementById('generate-btn');
+        const regenerateBtn = document.getElementById('regenerate-btn');
+        const statsEl = document.getElementById('stats');
+        const planListEl = document.getElementById('plan-list');
+        const currentTypeEl = document.getElementById('current-type');
+        const timeDisplayEl = document.getElementById('time-display');
+        const currentNameEl = document.getElementById('current-name');
+        const currentMetaEl = document.getElementById('current-meta');
+        const progressBarEl = document.getElementById('progress-bar');
+        const jumpProgressEl = document.getElementById('jump-progress');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        let activities = [];
+        let timeline = [];
+        let currentIndex = 0;
+        let currentRemaining = 0;
+        let running = false;
+        let paused = false;
+        let timerId = null;
+        let lastTickAt = 0;
+        let audioCtx = null;
+        let lastJumpRep = 0;
+
+        function weightedPick(options) {
+            const total = options.reduce((sum, item) => sum + item.weight, 0);
+            let roll = Math.random() * total;
+            for (const item of options) {
+                roll -= item.weight;
+                if (roll <= 0) return item;
+            }
+            return options[options.length - 1];
+        }
+
+        function shuffle(items) {
+            const arr = [...items];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function formatTime(seconds) {
+            const safe = Math.max(0, Math.round(seconds));
+            const m = Math.floor(safe / 60);
+            const s = safe % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function formatReadable(seconds) {
+            const safe = Math.max(0, Math.round(seconds));
+            const m = Math.floor(safe / 60);
+            const s = safe % 60;
+            if (m > 0 && s > 0) return `${m}分${s}秒`;
+            if (m > 0) return `${m}分钟`;
+            return `${s}秒`;
+        }
+
+        function buildTypePlan(type, targetSeconds) {
+            const config = exerciseConfig[type];
+            const min = targetSeconds * 0.9;
+            const max = targetSeconds * 1.1;
+            let best = null;
+
+            for (let attempt = 0; attempt < 2000; attempt++) {
+                const items = [];
+                let total = 0;
+                const guardLimit = Math.max(max + 240, targetSeconds + 420);
+
+                while (total < min && total < guardLimit) {
+                    const picked = weightedPick(config.options);
+                    const item = {
+                        type,
+                        kind: 'exercise',
+                        name: config.name,
+                        seconds: picked.seconds,
+                        reps: picked.reps || null
+                    };
+                    items.push(item);
+                    total += item.seconds;
+                }
+
+                const diff = Math.abs(total - targetSeconds);
+                const candidate = { items, total, diff };
+                if (!best || candidate.diff < best.diff) best = candidate;
+                if (total >= min && total <= max) return candidate;
+            }
+
+            return best;
+        }
+
+        function createPlan() {
+            const minutes = Math.max(1, Math.min(120, Number(targetInput.value) || 10));
+            targetInput.value = minutes;
+
+            const targetSeconds = minutes * 60;
+            const byType = ['A', 'B', 'C'].map((type) => ({
+                type,
+                ...buildTypePlan(type, targetSeconds)
+            }));
+
+            activities = shuffle(byType.flatMap((group) => group.items));
+            timeline = [];
+            activities.forEach((item, index) => {
+                timeline.push(item);
+                if (index < activities.length - 1) {
+                    const restSeconds = restOptions[Math.floor(Math.random() * restOptions.length)];
+                    timeline.push({
+                        type: 'rest',
+                        kind: 'rest',
+                        name: '休息',
+                        seconds: restSeconds
+                    });
+                }
+            });
+
+            renderStats(byType, targetSeconds);
+            renderPlan();
+            resetTimerState();
+            currentNameEl.textContent = '计划已生成';
+            currentMetaEl.textContent = `${activities.length} 组运动，含 ${activities.length - 1} 次休息`;
+            startBtn.disabled = false;
+            regenerateBtn.disabled = false;
+            resetBtn.disabled = false;
+        }
+
+        function renderStats(byType, targetSeconds) {
+            const restTotal = timeline.filter((item) => item.kind === 'rest')
+                .reduce((sum, item) => sum + item.seconds, 0);
+            const exerciseTotal = byType.reduce((sum, group) => sum + group.total, 0);
+            const stats = byType.map((group) => {
+                const pct = Math.round((group.total / targetSeconds) * 100);
+                return {
+                    label: `${group.type} ${exerciseConfig[group.type].name}`,
+                    value: `${formatReadable(group.total)} · ${pct}%`
+                };
+            });
+
+            stats.push({ label: '运动合计', value: formatReadable(exerciseTotal) });
+            stats.push({ label: '休息合计', value: formatReadable(restTotal) });
+
+            statsEl.innerHTML = stats.map((item) => `
+                <div class="stat">
+                    <div class="stat-label">${item.label}</div>
+                    <div class="stat-value">${item.value}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderPlan() {
+            if (timeline.length === 0) {
+                planListEl.innerHTML = '<div class="empty">暂无计划</div>';
+                return;
+            }
+
+            planListEl.innerHTML = timeline.map((item, index) => {
+                const badgeClass = item.kind === 'rest' ? 'rest' : item.type.toLowerCase();
+                const title = item.kind === 'rest'
+                    ? '休息'
+                    : `${item.type} ${item.name}${item.reps ? ` · ${item.reps}次` : ''}`;
+                const subtitle = item.kind === 'rest'
+                    ? '45s / 60s / 90s 随机休息'
+                    : `${item.name} · 第 ${countExerciseBefore(index) + 1} 组`;
+                const stateClass = index < currentIndex ? 'done' : (index === currentIndex && running ? 'active' : '');
+                return `
+                    <div class="plan-item ${stateClass}" data-index="${index}">
+                        <div class="badge ${badgeClass}">${item.kind === 'rest' ? '休' : item.type}</div>
+                        <div>
+                            <div class="item-title">${title}</div>
+                            <div class="item-subtitle">${subtitle}</div>
+                        </div>
+                        <div class="item-time">${formatTime(item.seconds)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function countExerciseBefore(index) {
+            return timeline.slice(0, index).filter((item) => item.kind === 'exercise').length;
+        }
+
+        function resetTimerState() {
+            stopTicker();
+            running = false;
+            paused = false;
+            currentIndex = 0;
+            currentRemaining = timeline[0]?.seconds || 0;
+            lastJumpRep = 0;
+            pauseBtn.textContent = '暂停';
+            pauseBtn.disabled = true;
+            startBtn.disabled = timeline.length === 0;
+            updateCurrentDisplay();
+            renderPlan();
+        }
+
+        function ensureAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function beep(frequency = 880, duration = 0.08) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.value = frequency;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration + 0.02);
+        }
+
+        function flashJump() {
+            document.body.classList.remove('jump-flash');
+            void document.body.offsetWidth;
+            document.body.classList.add('jump-flash');
+        }
+
+        function startTimer() {
+            if (timeline.length === 0) return;
+            ensureAudio();
+            if (!running) {
+                running = true;
+                currentIndex = 0;
+                currentRemaining = timeline[0].seconds;
+            }
+            paused = false;
+            lastTickAt = performance.now();
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            pauseBtn.textContent = '暂停';
+            tick();
+            renderPlan();
+        }
+
+        function stopTicker() {
+            if (timerId) {
+                cancelAnimationFrame(timerId);
+                timerId = null;
+            }
+        }
+
+        function tick() {
+            if (!running || paused) return;
+
+            const now = performance.now();
+            const delta = (now - lastTickAt) / 1000;
+            lastTickAt = now;
+            currentRemaining -= delta;
+
+            handleJumpPulse();
+
+            if (currentRemaining <= 0) {
+                advanceItem();
+            }
+
+            updateCurrentDisplay();
+            timerId = requestAnimationFrame(tick);
+        }
+
+        function advanceItem() {
+            beep(timeline[currentIndex]?.kind === 'rest' ? 660 : 990, 0.1);
+            currentIndex += 1;
+            lastJumpRep = 0;
+
+            if (currentIndex >= timeline.length) {
+                finishTimer();
+                return;
+            }
+
+            currentRemaining = timeline[currentIndex].seconds + Math.min(0, currentRemaining);
+            if (currentRemaining <= 0) currentRemaining = timeline[currentIndex].seconds;
+            renderPlan();
+        }
+
+        function finishTimer() {
+            stopTicker();
+            running = false;
+            paused = false;
+            currentIndex = timeline.length;
+            currentRemaining = 0;
+            currentTypeEl.textContent = '完成';
+            currentTypeEl.className = 'current-type';
+            timeDisplayEl.textContent = '00:00';
+            currentNameEl.textContent = '运动完成';
+            currentMetaEl.textContent = '可以重新生成下一轮计划';
+            progressBarEl.style.width = '100%';
+            jumpProgressEl.style.display = 'none';
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            renderPlan();
+            beep(1046, 0.18);
+            setTimeout(() => beep(1318, 0.18), 180);
+        }
+
+        function togglePause() {
+            if (!running) return;
+            paused = !paused;
+            pauseBtn.textContent = paused ? '继续' : '暂停';
+            if (!paused) {
+                lastTickAt = performance.now();
+                tick();
+            } else {
+                stopTicker();
+            }
+        }
+
+        function updateCurrentDisplay() {
+            const item = timeline[currentIndex];
+            if (!item) {
+                timeDisplayEl.textContent = '00:00';
+                progressBarEl.style.width = '0%';
+                jumpProgressEl.style.display = 'none';
+                return;
+            }
+
+            const elapsed = item.seconds - currentRemaining;
+            const pct = Math.max(0, Math.min(100, (elapsed / item.seconds) * 100));
+            const badgeClass = item.kind === 'rest' ? 'rest' : item.type.toLowerCase();
+
+            currentTypeEl.className = `current-type ${badgeClass}`;
+            currentTypeEl.textContent = item.kind === 'rest' ? '休息' : `${item.type} ${item.name}`;
+            timeDisplayEl.textContent = formatTime(currentRemaining);
+            currentNameEl.textContent = item.kind === 'rest'
+                ? '休息'
+                : `${item.name}${item.reps ? ` · ${item.reps}次` : ''}`;
+            currentMetaEl.textContent = item.kind === 'rest'
+                ? `下一组：${nextExerciseLabel()}`
+                : `${currentIndex + 1} / ${timeline.length}`;
+            progressBarEl.style.width = `${pct}%`;
+            renderJumpProgress(item, elapsed);
+        }
+
+        function nextExerciseLabel() {
+            const next = timeline.slice(currentIndex + 1).find((item) => item.kind === 'exercise');
+            if (!next) return '完成';
+            return `${next.type} ${next.name}${next.reps ? ` ${next.reps}次` : ''}`;
+        }
+
+        function renderJumpProgress(item, elapsed) {
+            if (item?.type !== 'C') {
+                jumpProgressEl.style.display = 'none';
+                jumpProgressEl.innerHTML = '';
+                return;
+            }
+
+            const done = Math.max(0, Math.min(item.reps, Math.floor(elapsed / 3)));
+            jumpProgressEl.style.display = 'grid';
+            jumpProgressEl.innerHTML = Array.from({ length: item.reps }, (_, index) => (
+                `<div class="rep-dot ${index < done ? 'done' : ''}"></div>`
+            )).join('');
+        }
+
+        function handleJumpPulse() {
+            const item = timeline[currentIndex];
+            if (!item || item.type !== 'C') return;
+
+            const elapsed = item.seconds - currentRemaining;
+            const rep = Math.max(0, Math.min(item.reps, Math.floor(elapsed / 3)));
+            if (rep > lastJumpRep) {
+                lastJumpRep = rep;
+                flashJump();
+                beep(1180, 0.06);
+            }
+        }
+
+        generateBtn.addEventListener('click', createPlan);
+        regenerateBtn.addEventListener('click', createPlan);
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', togglePause);
+        resetBtn.addEventListener('click', resetTimerState);
+    </script>
+</body>
+
+</html>
