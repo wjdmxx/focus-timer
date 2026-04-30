@@ -878,11 +878,21 @@
             updateUI();
         }
 
-        function recordPhase(type, duration) {
-            sessionHistory.push({
+        function recordPhase(type, duration, planned = currentPhaseStartTime, interrupted = false) {
+            const phase = {
                 type: type, // 'focus' or 'cooling'
                 duration: duration
-            });
+            };
+
+            if (type === 'focus') {
+                phase.planned = planned;
+            }
+
+            if (interrupted) {
+                phase.interrupted = true;
+            }
+
+            sessionHistory.push(phase);
         }
 
         function handleTimerEnd() {
@@ -1042,8 +1052,8 @@
 
             // 记录专注阶段（实际使用的时间 = 初始时间 - 剩余时间）
             const usedTime = currentPhaseStartTime - timeLeft;
-            if (usedTime > 0) {
-                recordPhase('focus', usedTime);
+            if (currentPhaseStartTime > 0) {
+                recordPhase('focus', usedTime, currentPhaseStartTime);
             }
 
             // 1. 记录当前剩余时间
@@ -1117,13 +1127,13 @@
             stopTimer();
             timerEnded = false;
 
-            if (elapsed > 0) {
-                sessionHistory.push({
-                    type: isCoolingDown ? 'cooling' : 'focus',
-                    duration: elapsed,
-                    planned: currentPhaseStartTime,
-                    interrupted: true
-                });
+            if (currentPhaseStartTime > 0) {
+                recordPhase(
+                    isCoolingDown ? 'cooling' : 'focus',
+                    elapsed,
+                    currentPhaseStartTime,
+                    true
+                );
             }
 
             isCoolingDown = false;
@@ -1205,7 +1215,7 @@
                 const labelColor = item.type === 'focus' ? 'text-blue-600' : 'text-red-500';
 
                 let timeText = formatTimeReadable(item.duration);
-                if (item.interrupted && item.planned) {
+                if (item.type === 'focus' && item.planned) {
                     timeText += ` / ${formatTimeReadable(item.planned)}`;
                 }
 
