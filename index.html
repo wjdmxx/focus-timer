@@ -315,6 +315,11 @@
             color: #ef4444;
         }
 
+        .timeline-item.sprint::before {
+            background: #f97316;
+            color: #f97316;
+        }
+
         .timeline-item.complete::before {
             background: #10b981;
             color: #10b981;
@@ -547,6 +552,227 @@
         .beat-dots.resting {
             opacity: 0.18;
         }
+
+        /* 冲刺阶段 */
+        .sprint-mode {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(251, 146, 60, 0.42), transparent 38%),
+                radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.34), transparent 42%),
+                #291337 !important;
+        }
+
+        .sprint-mode .timer-card {
+            background: rgba(40, 18, 55, 0.82);
+            color: white;
+            border-color: rgba(251, 146, 60, 0.5);
+            box-shadow: 0 0 45px rgba(249, 115, 22, 0.24);
+        }
+
+        .sprint-mode .beat-dot.accent {
+            background: #fb923c;
+        }
+
+        .sprint-mode .beat-dot.normal {
+            background: #c084fc;
+        }
+
+        .phase-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+            padding: 5px 14px;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+        }
+
+        .cooling-mode .phase-badge {
+            background: rgba(255, 255, 255, 0.18);
+            color: white;
+        }
+
+        .sprint-mode .phase-badge {
+            background: rgba(249, 115, 22, 0.2);
+            color: #fdba74;
+        }
+
+        /* 可编辑的随机范围 */
+        .range-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 72px 16px 72px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .range-grid.single {
+            grid-template-columns: minmax(0, 1fr) 160px;
+        }
+
+        .range-grid label {
+            text-align: left;
+            font-size: 0.82rem;
+            color: #475569;
+            font-weight: 650;
+        }
+
+        .range-grid input {
+            width: 100%;
+            min-width: 0;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 9px;
+            padding: 7px 6px;
+            text-align: center;
+            font-weight: 700;
+            color: #334155;
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .range-separator {
+            color: #94a3b8;
+            font-weight: 700;
+        }
+
+        .config-details {
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.45);
+            overflow: hidden;
+        }
+
+        .config-details summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 13px 15px;
+            font-weight: 750;
+            color: #475569;
+            text-align: left;
+        }
+
+        .config-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .config-details summary::after {
+            content: '＋';
+            float: right;
+            color: #8b5cf6;
+        }
+
+        .config-details[open] summary::after {
+            content: '－';
+        }
+
+        .details-body {
+            display: grid;
+            gap: 10px;
+            padding: 0 15px 15px;
+        }
+
+        .setting-note {
+            font-size: 0.76rem;
+            line-height: 1.5;
+            text-align: left;
+            color: #64748b;
+        }
+
+        /* 节拍微调器 */
+        .tempo-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timer-below {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 18px;
+            padding: 14px 12px 6px;
+        }
+
+        .timer-below .beat-dots {
+            margin-bottom: 12px;
+        }
+
+        .tempo-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+        }
+
+        .tempo-btn {
+            --cooldown-angle: 0deg;
+            position: relative;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            border: 0;
+            color: white;
+            font-size: 2rem;
+            line-height: 1;
+            font-weight: 350;
+            cursor: pointer;
+            isolation: isolate;
+            box-shadow: 0 9px 22px rgba(15, 23, 42, 0.17);
+            transition: transform 150ms ease, opacity 180ms ease;
+        }
+
+        .tempo-btn.minus {
+            background: #2563eb;
+        }
+
+        .tempo-btn.plus {
+            background: #e11d48;
+        }
+
+        .tempo-btn::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            z-index: -2;
+            border-radius: 50%;
+            background: conic-gradient(rgba(15, 23, 42, 0.68) var(--cooldown-angle), rgba(203, 213, 225, 0.32) 0);
+            opacity: 0;
+        }
+
+        .tempo-btn::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            z-index: -1;
+            border-radius: 50%;
+            background: inherit;
+        }
+
+        .tempo-btn.cooldown::before {
+            opacity: 1;
+        }
+
+        .tempo-btn:active:not(:disabled) {
+            transform: scale(0.92);
+        }
+
+        .tempo-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.48;
+        }
+
+        @media (max-width: 480px) {
+            .range-grid {
+                grid-template-columns: minmax(0, 1fr) 64px 12px 64px;
+            }
+
+            .range-grid.single {
+                grid-template-columns: minmax(0, 1fr) 132px;
+            }
+        }
     </style>
 </head>
 
@@ -560,7 +786,7 @@
 
     <!-- 配置页面 -->
     <div id="config-container"
-        class="max-w-md w-full timer-card rounded-[2rem] shadow-2xl p-8 text-center border border-white relative z-10">
+        class="max-w-xl w-full timer-card rounded-[2rem] shadow-2xl p-8 text-center border border-white relative z-10 my-6">
         <h1 class="text-2xl font-bold mb-6 opacity-80">配置定时设置</h1>
 
         <!-- 随机模式开关 -->
@@ -569,24 +795,43 @@
             <div id="random-toggle" class="toggle-switch"></div>
         </div>
 
-        <!-- 随机模式类型选择（普通/EX） -->
+        <!-- 随机模式类型选择（预设值仍可编辑） -->
         <div id="random-mode-options" class="toggle-container random-info-hidden" style="flex-direction: column; gap: 8px;">
             <div class="random-mode-selector" style="width: 100%;">
                 <button id="mode-normal" class="mode-btn active">普通</button>
                 <button id="mode-ex" class="mode-btn">EX</button>
             </div>
-            <div id="random-info-normal" class="random-info">
-                <strong>普通随机模式：</strong><br>
-                • 初始时间：10-20 分钟<br>
-                • 冷静期：2-4 分钟<br>
-                • 时间倍率：1.5-3.0 倍
+            <div class="random-info">
+                预设只是起点，下面所有区间都可以继续修改；每次真正抽到的结果不会提前显示。
             </div>
-            <div id="random-info-ex" class="random-info random-info-hidden">
-                <strong>EX随机模式：</strong><br>
-                • 初始时间：20-30 分钟<br>
-                • 冷静期：1-2 分钟<br>
-                • 时间倍率：2-4 倍<br>
-                • 特殊规则：翻倍后不足10分钟时，至少15分钟
+            <div id="random-range-settings" class="details-body" style="width: 100%; padding: 4px 0 0;">
+                <div class="range-grid">
+                    <label>初始时间（分钟）</label>
+                    <input id="random-initial-min" type="number" min="0.1" step="0.5" value="10">
+                    <span class="range-separator">–</span>
+                    <input id="random-initial-max" type="number" min="0.1" step="0.5" value="20">
+                </div>
+                <div class="range-grid">
+                    <label>冷静期（分钟）</label>
+                    <input id="random-cooling-min" type="number" min="0.1" step="0.1" value="2">
+                    <span class="range-separator">–</span>
+                    <input id="random-cooling-max" type="number" min="0.1" step="0.1" value="4">
+                </div>
+                <div class="range-grid">
+                    <label>下轮倍率</label>
+                    <input id="random-multiplier-min" type="number" min="0.1" step="0.1" value="1.5">
+                    <span class="range-separator">–</span>
+                    <input id="random-multiplier-max" type="number" min="0.1" step="0.1" value="3">
+                </div>
+                <div class="range-grid single">
+                    <label>下轮最低时间（分钟）</label>
+                    <input id="random-min-next" type="number" min="0" step="0.5" value="0">
+                </div>
+                <div class="range-grid single">
+                    <label>越界惊喜概率（%）</label>
+                    <input id="random-wild-chance" type="number" min="0" max="50" step="1" value="8">
+                </div>
+                <p class="setting-note">越界惊喜触发时，会偶尔从更宽的安全范围抽取时间或倍率，但“下轮最低时间”仍然有效。</p>
             </div>
         </div>
 
@@ -624,29 +869,89 @@
                     <input type="number" id="multiplier-input" value="1.0" class="config-input" step="0.1">
                 </div>
             </div>
+
+            <div class="config-item">
+                <label class="text-sm font-semibold text-slate-600 text-left">下轮最低时间（分钟）</label>
+                <div class="config-row">
+                    <input type="number" id="minimum-time-input" value="0" min="0" class="config-input" step="0.5">
+                    <span class="setting-note">设为 0 表示不限制</span>
+                </div>
+            </div>
         </div>
+
+        <details class="config-details mt-5" open>
+            <summary>⚡ 突发冲刺设置</summary>
+            <div class="details-body">
+                <div class="range-grid single">
+                    <label>出现概率（%）</label>
+                    <input id="sprint-chance" type="number" min="0" max="100" step="1" value="85">
+                </div>
+                <div class="range-grid">
+                    <label>占剩余时间（%）</label>
+                    <input id="sprint-ratio-min" type="number" min="1" max="300" step="1" value="10">
+                    <span class="range-separator">–</span>
+                    <input id="sprint-ratio-max" type="number" min="1" max="300" step="1" value="30">
+                </div>
+                <div class="range-grid">
+                    <label>时间下限 / 上限（分钟）</label>
+                    <input id="sprint-min" type="number" min="0" step="0.5" value="2" placeholder="不限">
+                    <span class="range-separator">–</span>
+                    <input id="sprint-max" type="number" min="0" step="0.5" value="" placeholder="不限">
+                </div>
+                <div class="range-grid single">
+                    <label>冲刺后跳过冷静（%）</label>
+                    <input id="sprint-skip-cooling-chance" type="number" min="0" max="25" step="1" value="3">
+                </div>
+                <div class="range-grid single">
+                    <label>超长冲刺概率（%）</label>
+                    <input id="sprint-long-chance" type="number" min="0" max="30" step="1" value="4">
+                </div>
+                <div class="range-grid">
+                    <label>超长冲刺（分钟）</label>
+                    <input id="sprint-long-min" type="number" min="1" step="0.5" value="8">
+                    <span class="range-separator">–</span>
+                    <input id="sprint-long-max" type="number" min="1" step="0.5" value="20" placeholder="不限">
+                </div>
+                <p class="setting-note">普通冲刺主要从较短值抽取，但会以小概率偏向区间高位；时间上下限都可以留空，留空即不限制。是否跳过冷静同样不会提前提示。</p>
+            </div>
+        </details>
 
         <button id="confirm-btn"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 text-lg mt-8">
             确认并开始
         </button>
+        <button id="surprise-btn"
+            class="hidden w-full mt-3 bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 text-lg">
+            Surprise Me · 全随机开始
+        </button>
     </div>
 
     <!-- 计时页面 -->
     <div id="timer-container"
-        class="max-w-md w-full timer-card rounded-[2rem] shadow-2xl p-8 text-center border border-white hidden relative z-10">
-        <div id="beat-dots" class="beat-dots hidden">
-            <div id="beat-dot-accent" class="beat-dot accent"></div>
-            <div id="beat-dot-normal" class="beat-dot normal"></div>
-        </div>
-        <div id="timer-display" class="digital-font text-8xl font-black my-8 text-slate-800">
-            05:00
+        class="max-w-md w-full hidden relative z-10">
+        <div class="timer-card rounded-[2rem] shadow-2xl p-8 text-center border border-white">
+            <div id="timer-display" class="digital-font text-8xl font-black my-8 text-slate-800">
+                05:00
+            </div>
+
+            <div class="space-y-4">
+                <button id="trigger-btn" type="button" aria-label="结束当前阶段"
+                    class="w-full bg-white border-2 border-red-500 hover:bg-red-50 rounded-2xl shadow-md transform transition active:scale-95 hidden trigger-button">
+                </button>
+            </div>
         </div>
 
-        <div class="space-y-4">
-            <button id="trigger-btn"
-                class="w-full bg-white border-2 border-red-500 hover:bg-red-50 rounded-2xl shadow-md transform transition active:scale-95 hidden trigger-button">
-            </button>
+        <div class="timer-below">
+            <div id="beat-dots" class="beat-dots hidden">
+                <div id="beat-dot-accent" class="beat-dot accent"></div>
+                <div id="beat-dot-normal" class="beat-dot normal"></div>
+            </div>
+            <div id="tempo-panel" class="tempo-panel">
+                <div class="tempo-controls">
+                    <button id="tempo-down-btn" class="tempo-btn minus" type="button" aria-label="降低动态节拍">−</button>
+                    <button id="tempo-up-btn" class="tempo-btn plus" type="button" aria-label="提高动态节拍">＋</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -700,14 +1005,16 @@
         const focusGlow = document.getElementById('focus-glow');
         const timelineEl = document.getElementById('timeline');
         const totalTimeEl = document.getElementById('total-time');
+        const tempoPanel = document.getElementById('tempo-panel');
+        const tempoDownBtn = document.getElementById('tempo-down-btn');
+        const tempoUpBtn = document.getElementById('tempo-up-btn');
+        const surpriseBtn = document.getElementById('surprise-btn');
 
         // 新增DOM元素
         const hideTimeToggle = document.getElementById('hide-time-toggle');
         const randomModeOptions = document.getElementById('random-mode-options');
         const modeNormalBtn = document.getElementById('mode-normal');
         const modeExBtn = document.getElementById('mode-ex');
-        const randomInfoNormal = document.getElementById('random-info-normal');
-        const randomInfoEx = document.getElementById('random-info-ex');
 
         // 滑动条和输入框
         const initialTimeSlider = document.getElementById('initial-time-slider');
@@ -716,12 +1023,39 @@
         const coolingTimeInput = document.getElementById('cooling-time-input');
         const multiplierSlider = document.getElementById('multiplier-slider');
         const multiplierInput = document.getElementById('multiplier-input');
+        const minimumTimeInput = document.getElementById('minimum-time-input');
+
+        const randomInputs = {
+            initialMin: document.getElementById('random-initial-min'),
+            initialMax: document.getElementById('random-initial-max'),
+            coolingMin: document.getElementById('random-cooling-min'),
+            coolingMax: document.getElementById('random-cooling-max'),
+            multiplierMin: document.getElementById('random-multiplier-min'),
+            multiplierMax: document.getElementById('random-multiplier-max'),
+            minimumNext: document.getElementById('random-min-next'),
+            wildChance: document.getElementById('random-wild-chance')
+        };
+
+        const sprintInputs = {
+            chance: document.getElementById('sprint-chance'),
+            ratioMin: document.getElementById('sprint-ratio-min'),
+            ratioMax: document.getElementById('sprint-ratio-max'),
+            min: document.getElementById('sprint-min'),
+            max: document.getElementById('sprint-max'),
+            skipCoolingChance: document.getElementById('sprint-skip-cooling-chance'),
+            longChance: document.getElementById('sprint-long-chance'),
+            longMin: document.getElementById('sprint-long-min'),
+            longMax: document.getElementById('sprint-long-max')
+        };
 
         // 配置值
         let config = {
             initialTime: 5,
             coolingTime: 3,
-            multiplier: 1.0
+            multiplier: 1.0,
+            minimumNext: 0,
+            random: null,
+            sprint: null
         };
 
         // 随机模式状态
@@ -733,23 +1067,107 @@
         let timeLeft = 0;
         let timerInterval = null;
         let isCoolingDown = false;
+        let isSprinting = false;
         let lastTaskRemainingTime = 0;
         let timerEnded = false; // 新增：标记计时是否已结束（用于隐藏时间模式）
+        let skipCoolingAfterSprint = false;
+        let currentSprintWasLong = false;
 
         // 记录计时流程
         let sessionHistory = [];
         let currentPhaseStartTime = 0;
+
+        // 节拍调整：每次同时改变线性系数和固定偏移
+        let tempoScale = 1;
+        let tempoOffset = 0;
+        let tempoControlCooldownEnd = 0;
+        let tempoControlCooldownFrame = null;
+        const TEMPO_CONTROL_COOLDOWN_MS = 60 * 1000;
 
         // 随机数生成函数
         function randomInRange(min, max) {
             return Math.random() * (max - min) + min;
         }
 
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
+        }
+
+        function readNumber(input, fallback, min = -Infinity, max = Infinity) {
+            const value = Number.parseFloat(input.value);
+            return clamp(Number.isFinite(value) ? value : fallback, min, max);
+        }
+
+        function readRange(minInput, maxInput, fallbackMin, fallbackMax, floor = 0) {
+            let min = readNumber(minInput, fallbackMin, floor);
+            let max = readNumber(maxInput, fallbackMax, floor);
+            if (min > max) [min, max] = [max, min];
+            minInput.value = min;
+            maxInput.value = max;
+            return { min, max };
+        }
+
+        function readOptionalRange(minInput, maxInput) {
+            const parseOptional = (input) => {
+                if (String(input.value).trim() === '') return null;
+                const value = Number.parseFloat(input.value);
+                return Number.isFinite(value) ? Math.max(0, value) : null;
+            };
+            let min = parseOptional(minInput);
+            let max = parseOptional(maxInput);
+            if (min !== null && max !== null && min > max) {
+                [min, max] = [max, min];
+                minInput.value = min;
+                maxInput.value = max;
+            }
+            return { min, max };
+        }
+
+        function rollPercent(percent) {
+            return Math.random() * 100 < clamp(percent, 0, 100);
+        }
+
+        const RANDOM_PRESETS = {
+            normal: {
+                initialMin: 10, initialMax: 20,
+                coolingMin: 2, coolingMax: 4,
+                multiplierMin: 1.5, multiplierMax: 3,
+                minimumNext: 0, wildChance: 8,
+                sprintChance: 85, sprintSkip: 3, sprintLong: 4
+            },
+            ex: {
+                initialMin: 20, initialMax: 30,
+                coolingMin: 1, coolingMax: 2,
+                multiplierMin: 2, multiplierMax: 4,
+                minimumNext: 15, wildChance: 15,
+                sprintChance: 90, sprintSkip: 5, sprintLong: 7
+            }
+        };
+
+        function applyRandomPreset(name) {
+            const preset = RANDOM_PRESETS[name];
+            randomInputs.initialMin.value = preset.initialMin;
+            randomInputs.initialMax.value = preset.initialMax;
+            randomInputs.coolingMin.value = preset.coolingMin;
+            randomInputs.coolingMax.value = preset.coolingMax;
+            randomInputs.multiplierMin.value = preset.multiplierMin;
+            randomInputs.multiplierMax.value = preset.multiplierMax;
+            randomInputs.minimumNext.value = preset.minimumNext;
+            randomInputs.wildChance.value = preset.wildChance;
+            sprintInputs.chance.value = preset.sprintChance;
+            sprintInputs.skipCoolingChance.value = preset.sprintSkip;
+            sprintInputs.longChance.value = preset.sprintLong;
+        }
+
+        function updateSurpriseButtonVisibility() {
+            surpriseBtn.classList.toggle('hidden', !(isRandomMode && isHideTimeMode));
+        }
+
         // 随机模式切换
         randomToggle.addEventListener('click', () => {
             isRandomMode = !isRandomMode;
             randomToggle.classList.toggle('active', isRandomMode);
-            configItems.classList.toggle('config-disabled', isRandomMode);
+            configItems.classList.toggle('hidden', isRandomMode);
             
             // 显示/隐藏随机模式选项
             if (isRandomMode) {
@@ -757,12 +1175,14 @@
             } else {
                 randomModeOptions.classList.add('random-info-hidden');
             }
+            updateSurpriseButtonVisibility();
         });
 
         // 隐藏时间模式切换
         hideTimeToggle.addEventListener('click', () => {
             isHideTimeMode = !isHideTimeMode;
             hideTimeToggle.classList.toggle('active', isHideTimeMode);
+            updateSurpriseButtonVisibility();
         });
 
         // 普通/EX模式切换
@@ -770,16 +1190,14 @@
             isExMode = false;
             modeNormalBtn.classList.add('active');
             modeExBtn.classList.remove('active');
-            randomInfoNormal.classList.remove('random-info-hidden');
-            randomInfoEx.classList.add('random-info-hidden');
+            applyRandomPreset('normal');
         });
 
         modeExBtn.addEventListener('click', () => {
             isExMode = true;
             modeExBtn.classList.add('active');
             modeNormalBtn.classList.remove('active');
-            randomInfoEx.classList.remove('random-info-hidden');
-            randomInfoNormal.classList.add('random-info-hidden');
+            applyRandomPreset('ex');
         });
 
         // 同步滑动条和输入框
@@ -820,6 +1238,13 @@
             }
         }
 
+        function updateTempoControlAvailability() {
+            const cooldownActive = Date.now() < tempoControlCooldownEnd;
+            const adjustable = Boolean(timerInterval) && !timerEnded && !isCoolingDown && !isSprinting && !cooldownActive;
+            tempoDownBtn.disabled = !adjustable;
+            tempoUpBtn.disabled = !adjustable;
+        }
+
         function updateUI() {
             // 判断是否需要隐藏时间
             const shouldHideTime = isHideTimeMode && !isCoolingDown;
@@ -836,6 +1261,12 @@
                 timerDisplay.classList.remove('text-slate-800');
                 triggerBtn.classList.add('hidden');
                 focusGlow.classList.add('hidden');
+            } else if (isSprinting) {
+                body.className = "min-h-screen flex items-center justify-center p-4 sprint-mode";
+                timerDisplay.classList.add('text-white');
+                timerDisplay.classList.remove('text-slate-800');
+                triggerBtn.classList.add('hidden');
+                focusGlow.classList.remove('hidden');
             } else {
                 body.className = "bg-slate-100 min-h-screen flex items-center justify-center p-4";
                 timerDisplay.classList.remove('text-white');
@@ -849,6 +1280,7 @@
                     focusGlow.classList.add('hidden');
                 }
             }
+            updateTempoControlAvailability();
         }
 
         function startTimer() {
@@ -862,7 +1294,7 @@
                     updateUI();
                 } else {
                     // 计时结束
-                    if (isHideTimeMode && !isCoolingDown) {
+                    if (isHideTimeMode && !isCoolingDown && !isSprinting) {
                         // 隐藏时间模式下，计时结束后停止计时但保持显示**:**
                         clearInterval(timerInterval);
                         timerInterval = null;
@@ -884,7 +1316,7 @@
 
         function recordPhase(type, duration, planned = currentPhaseStartTime, interrupted = false) {
             const phase = {
-                type: type, // 'focus' or 'cooling'
+                type: type, // 'focus'、'sprint' 或 'cooling'
                 duration: duration
             };
 
@@ -899,10 +1331,126 @@
             sessionHistory.push(phase);
         }
 
+        function chooseCoolingSeconds() {
+            if (!isRandomMode) return Math.round(config.coolingTime * 60);
+            const range = config.random.cooling;
+            const minutes = rollPercent(config.random.wildChance)
+                ? randomInRange(0.5, 6.5)
+                : randomInRange(range.min, range.max);
+            return Math.max(1, Math.round(minutes * 60));
+        }
+
+        function chooseNextMultiplier() {
+            if (!isRandomMode) return config.multiplier;
+            if (rollPercent(config.random.wildChance)) {
+                return randomInRange(1.15, 5.25);
+            }
+            return randomInRange(config.random.multiplier.min, config.random.multiplier.max);
+        }
+
+        function sampleRightTailed(min, max = null, scale = null) {
+            const safeMin = Math.max(0, min);
+            const u = clamp(Math.random(), 0.000001, 0.999999);
+
+            if (max === null) {
+                // 无上限时使用指数长尾：大多数靠近下限，极少数会非常长。
+                const tailScale = scale ?? Math.max(2, safeMin * 0.8);
+                return safeMin - Math.log(1 - u) * tailScale;
+            }
+
+            const safeMax = Math.max(safeMin, max);
+            const span = safeMax - safeMin;
+            if (rollPercent(18)) {
+                // 小概率直接进入高位区间。
+                return safeMin + span * (0.68 + 0.32 * Math.pow(u, 0.45));
+            }
+            // 常规抽样偏向较短值。
+            return safeMin + span * Math.pow(u, 2.1);
+        }
+
+        function applyOptionalDurationLimits(seconds, limits) {
+            let result = seconds;
+            if (limits.min !== null) result = Math.max(result, limits.min * 60);
+            if (limits.max !== null) result = Math.min(result, limits.max * 60);
+            // 没有配置上限不等于允许数值溢出；内部仅保留一个 24 小时安全护栏。
+            return clamp(result, 10, 24 * 60 * 60);
+        }
+
+        function createSprintPlan(remainingSeconds) {
+            const sprint = config.sprint;
+            const isLong = rollPercent(sprint.longChance);
+            const skipCooling = rollPercent(sprint.skipCoolingChance);
+            const useWildDuration = isRandomMode && rollPercent(config.random.wildChance);
+            let seconds;
+
+            if (isLong) {
+                const longMin = sprint.long.min ?? 8;
+                const longMax = useWildDuration ? null : sprint.long.max;
+                seconds = sampleRightTailed(longMin, longMax, Math.max(5, longMin)) * 60;
+            } else {
+                let ratio;
+                if (useWildDuration) {
+                    // 越界惊喜使用独立长尾，偶尔可接近或超过剩余时间本身。
+                    ratio = sampleRightTailed(5, null, 32);
+                } else {
+                    ratio = sampleRightTailed(sprint.ratio.min, sprint.ratio.max);
+                }
+                ratio /= 100;
+                seconds = remainingSeconds * ratio;
+                seconds = applyOptionalDurationLimits(seconds, sprint.duration);
+            }
+            seconds = clamp(seconds, 10, 24 * 60 * 60);
+
+            return {
+                seconds: Math.max(10, Math.round(seconds)),
+                skipCooling,
+                isLong
+            };
+        }
+
+        function startCoolingStage() {
+            isSprinting = false;
+            isCoolingDown = true;
+            currentSprintWasLong = false;
+            timeLeft = chooseCoolingSeconds();
+            startTimer();
+        }
+
+        function startSprintStage() {
+            const plan = createSprintPlan(lastTaskRemainingTime);
+            isCoolingDown = false;
+            isSprinting = true;
+            skipCoolingAfterSprint = plan.skipCooling;
+            currentSprintWasLong = plan.isLong;
+            timeLeft = plan.seconds;
+            startTimer();
+        }
+
+        function startNextFocusStage() {
+            isCoolingDown = false;
+            isSprinting = false;
+            currentSprintWasLong = false;
+
+            const multiplier = chooseNextMultiplier();
+            timeLeft = Math.round(lastTaskRemainingTime * multiplier);
+            const minimumSeconds = Math.round(config.minimumNext * 60);
+            if (timeLeft > 0 && minimumSeconds > 0) {
+                timeLeft = Math.max(timeLeft, minimumSeconds);
+            }
+
+            if (timeLeft > 0) {
+                startTimer();
+            } else {
+                showCompletePage();
+            }
+        }
+
         function handleTimerEnd() {
             // 记录当前阶段
             if (isCoolingDown) {
                 recordPhase('cooling', currentPhaseStartTime);
+            } else if (isSprinting) {
+                recordPhase('sprint', currentPhaseStartTime);
             } else {
                 recordPhase('focus', currentPhaseStartTime);
             }
@@ -910,37 +1458,16 @@
             stopTimer();
             timerEnded = false;
             
-            if (isCoolingDown) {
-                // 冷静期结束 -> 进入倍率时间模式
-                isCoolingDown = false;
-
-                // 根据模式确定倍率
-                let currentMultiplier = config.multiplier;
-                if (isRandomMode) {
-                    if (isExMode) {
-                        // EX模式：2-4倍
-                        currentMultiplier = randomInRange(2.0, 4.0);
-                    } else {
-                        // 普通模式：1.5-3.0倍
-                        currentMultiplier = randomInRange(1.5, 3.0);
-                    }
-                }
-
-                timeLeft = Math.round(lastTaskRemainingTime * currentMultiplier);
-                
-                // EX模式特殊规则：翻倍后不足10分钟时，至少15分钟
-                if (isRandomMode && isExMode) {
-                    if (timeLeft < 10 * 60 && timeLeft > 0) {
-                        timeLeft = 15 * 60;
-                    }
-                }
-                
-                if (timeLeft > 0) {
-                    startTimer();
+            if (isSprinting) {
+                if (skipCoolingAfterSprint) {
+                    skipCoolingAfterSprint = false;
+                    startNextFocusStage();
                 } else {
-                    // 如果倍率后时间为0，直接结束
-                    showCompletePage();
+                    startCoolingStage();
                 }
+            } else if (isCoolingDown) {
+                // 冷静期结束 -> 进入倍率时间模式
+                startNextFocusStage();
             } else {
                 // 计时完成，显示完成页面
                 showCompletePage();
@@ -977,9 +1504,13 @@
 
             sessionHistory.forEach((item, index) => {
                 totalSeconds += item.duration;
-                const typeClass = item.type === 'focus' ? 'focus' : 'cooling';
-                const typeLabel = item.type === 'focus' ? '⏱️ 专注' : '😌 冷静';
-                const labelColor = item.type === 'focus' ? 'text-blue-600' : 'text-red-500';
+                const typeClass = item.type;
+                const typeLabel = item.type === 'focus'
+                    ? '⏱️ 专注'
+                    : (item.type === 'sprint' ? '⚡ 冲刺' : '😌 冷静');
+                const labelColor = item.type === 'focus'
+                    ? 'text-blue-600'
+                    : (item.type === 'sprint' ? 'text-orange-500' : 'text-red-500');
 
                 html += `
                     <div class="timeline-item ${typeClass}">
@@ -1005,26 +1536,73 @@
             totalTimeEl.textContent = formatTimeReadable(totalSeconds);
         }
 
+        function setRandomInput(input, value, digits = 1) {
+            input.value = Number(value.toFixed(digits));
+        }
+
+        function generateSurpriseProfile() {
+            const initialMin = randomInRange(3, 18);
+            const initialMax = clamp(sampleRightTailed(Math.max(25, initialMin + 8), null, 42), 25, 240);
+            const coolingMin = randomInRange(0.3, 2);
+            const coolingMax = coolingMin + randomInRange(1, 8);
+            const multiplierMin = randomInRange(1.1, 2.4);
+            const multiplierMax = multiplierMin + randomInRange(0.6, 4);
+            const ratioMin = randomInRange(5, 15);
+            const ratioMax = clamp(sampleRightTailed(30, null, 38), 30, 180);
+            const longMin = randomInRange(6, 12);
+
+            setRandomInput(randomInputs.initialMin, initialMin);
+            setRandomInput(randomInputs.initialMax, initialMax);
+            setRandomInput(randomInputs.coolingMin, coolingMin);
+            setRandomInput(randomInputs.coolingMax, coolingMax);
+            setRandomInput(randomInputs.multiplierMin, multiplierMin);
+            setRandomInput(randomInputs.multiplierMax, multiplierMax);
+            randomInputs.minimumNext.value = [0, 5, 10, 15, 20, 30][Math.floor(Math.random() * 6)];
+            setRandomInput(randomInputs.wildChance, randomInRange(15, 40), 0);
+
+            setRandomInput(sprintInputs.chance, randomInRange(82, 96), 0);
+            setRandomInput(sprintInputs.ratioMin, ratioMin, 0);
+            setRandomInput(sprintInputs.ratioMax, ratioMax, 0);
+            sprintInputs.min.value = rollPercent(30) ? '' : Number(randomInRange(0.5, 3).toFixed(1));
+            sprintInputs.max.value = rollPercent(55)
+                ? ''
+                : Number(clamp(sampleRightTailed(8, null, 12), 8, 60).toFixed(1));
+            setRandomInput(sprintInputs.skipCoolingChance, randomInRange(2, 10), 0);
+            setRandomInput(sprintInputs.longChance, randomInRange(3, 12), 0);
+            setRandomInput(sprintInputs.longMin, longMin);
+            sprintInputs.longMax.value = rollPercent(45)
+                ? ''
+                : Number(clamp(sampleRightTailed(Math.max(15, longMin), null, 18), 15, 90).toFixed(1));
+        }
+
         // 确认配置并开始
-        confirmBtn.addEventListener('click', () => {
+        function beginConfiguredSession() {
             // 重置历史记录
             sessionHistory = [];
             timerEnded = false;
 
             if (isRandomMode) {
-                if (isExMode) {
-                    // EX模式：初始时间 20-30 分钟
-                    config.initialTime = randomInRange(20, 30);
-                } else {
-                    // 普通随机模式：初始时间随机 10-20 分钟
-                    config.initialTime = randomInRange(10, 20);
-                }
-                // 冷却时间和倍率不在这里设置，而是在每次触发时随机
+                const initial = readRange(randomInputs.initialMin, randomInputs.initialMax, 10, 20, 0.1);
+                const cooling = readRange(randomInputs.coolingMin, randomInputs.coolingMax, 2, 4, 0.1);
+                const multiplier = readRange(randomInputs.multiplierMin, randomInputs.multiplierMax, 1.5, 3, 0.1);
+                const wildChance = readNumber(randomInputs.wildChance, 8, 0, 50);
+                config.random = {
+                    initial,
+                    cooling,
+                    multiplier,
+                    wildChance
+                };
+                config.minimumNext = readNumber(randomInputs.minimumNext, 0, 0, 240);
+                config.initialTime = rollPercent(wildChance)
+                    ? clamp(sampleRightTailed(5, null, 35), 3, 720)
+                    : randomInRange(initial.min, initial.max);
             } else {
                 // 固定模式：读取配置
                 config.initialTime = parseFloat(initialTimeInput.value) || 5;
                 config.coolingTime = parseFloat(coolingTimeInput.value) || 3;
                 config.multiplier = parseFloat(multiplierInput.value) || 1.0;
+                config.minimumNext = readNumber(minimumTimeInput, 0, 0, 240);
+                config.random = null;
 
                 // 确保值为正数
                 config.initialTime = Math.max(0.1, config.initialTime);
@@ -1032,20 +1610,50 @@
                 config.multiplier = Math.max(0.1, config.multiplier);
             }
 
+            const sprintRatio = readRange(sprintInputs.ratioMin, sprintInputs.ratioMax, 10, 30, 1);
+            const sprintDuration = readOptionalRange(sprintInputs.min, sprintInputs.max);
+            const sprintLong = readOptionalRange(sprintInputs.longMin, sprintInputs.longMax);
+            config.sprint = {
+                chance: readNumber(sprintInputs.chance, 85, 0, 100),
+                ratio: sprintRatio,
+                duration: sprintDuration,
+                skipCoolingChance: readNumber(sprintInputs.skipCoolingChance, 3, 0, 25),
+                longChance: readNumber(sprintInputs.longChance, 4, 0, 30),
+                long: sprintLong
+            };
+
             // 初始化计时
             timeLeft = Math.round(config.initialTime * 60);
             isCoolingDown = false;
+            isSprinting = false;
             lastTaskRemainingTime = 0;
+            skipCoolingAfterSprint = false;
+            currentSprintWasLong = false;
+            tempoScale = 1;
+            tempoOffset = 0;
+            tempoControlCooldownEnd = 0;
+            cancelAnimationFrame(tempoControlCooldownFrame);
+            tempoDownBtn.classList.remove('cooldown');
+            tempoUpBtn.classList.remove('cooldown');
+            tempoDownBtn.style.setProperty('--cooldown-angle', '0deg');
+            tempoUpBtn.style.setProperty('--cooldown-angle', '0deg');
 
             // 切换到计时页面
             showTimerPage();
             startTimer();
+        }
+
+        confirmBtn.addEventListener('click', beginConfiguredSession);
+        surpriseBtn.addEventListener('click', () => {
+            if (!isRandomMode || !isHideTimeMode) return;
+            generateSurpriseProfile();
+            beginConfiguredSession();
         });
 
         // 核心逻辑：触发冷静期 / 隐藏时间模式下的按钮处理
         triggerBtn.addEventListener('click', () => {
             // 隐藏时间模式下，如果计时已结束，则进入结算
-            if (isHideTimeMode && !isCoolingDown && timerEnded) {
+            if (isHideTimeMode && !isCoolingDown && !isSprinting && timerEnded) {
                 // 记录专注阶段
                 recordPhase('focus', currentPhaseStartTime);
                 timerEnded = false;
@@ -1063,27 +1671,15 @@
             // 1. 记录当前剩余时间
             lastTaskRemainingTime = timeLeft;
 
-            // 2. 切换状态
-            isCoolingDown = true;
+            // 2. 暗中抽取：冲刺，或直接进入冷静
+            stopTimer();
             timerEnded = false;
-
-            // 3. 设置冷静期时间
-            let coolingTime;
-            if (isRandomMode) {
-                if (isExMode) {
-                    // EX模式：1-2分钟
-                    coolingTime = randomInRange(1, 2);
-                } else {
-                    // 普通模式：2-4分钟
-                    coolingTime = randomInRange(2, 4);
-                }
+            skipCoolingAfterSprint = false;
+            if (rollPercent(config.sprint.chance)) {
+                startSprintStage();
             } else {
-                coolingTime = config.coolingTime;
+                startCoolingStage();
             }
-            timeLeft = Math.round(coolingTime * 60);
-
-            // 4. 重启计时循环
-            startTimer();
         });
 
         // 重新开始按钮
@@ -1133,7 +1729,7 @@
 
             if (currentPhaseStartTime > 0) {
                 recordPhase(
-                    isCoolingDown ? 'cooling' : 'focus',
+                    isCoolingDown ? 'cooling' : (isSprinting ? 'sprint' : 'focus'),
                     elapsed,
                     currentPhaseStartTime,
                     true
@@ -1141,6 +1737,7 @@
             }
 
             isCoolingDown = false;
+            isSprinting = false;
             bottomButtons.classList.add('hidden');
             peekTimeClearState();
             showCompletePage();
@@ -1214,9 +1811,13 @@
 
             sessionHistory.forEach((item) => {
                 totalSeconds += item.duration;
-                const typeClass = item.type === 'focus' ? 'focus' : 'cooling';
-                const typeLabel = item.type === 'focus' ? '⏱️ 专注' : '😌 冷静';
-                const labelColor = item.type === 'focus' ? 'text-blue-600' : 'text-red-500';
+                const typeClass = item.type;
+                const typeLabel = item.type === 'focus'
+                    ? '⏱️ 专注'
+                    : (item.type === 'sprint' ? '⚡ 冲刺' : '😌 冷静');
+                const labelColor = item.type === 'focus'
+                    ? 'text-blue-600'
+                    : (item.type === 'sprint' ? 'text-orange-500' : 'text-red-500');
 
                 let timeText = formatTimeReadable(item.duration);
                 if (item.type === 'focus' && item.planned) {
@@ -1273,6 +1874,7 @@
             _origShowConfigPage();
             bottomButtons.classList.add('hidden');
             peekTimeClearState();
+            clearTempoControlCooldown();
             forceEndFirstClick = 0;
             clearTimeout(forceEndTimeout);
             forceEndBtn.classList.remove('force-end-primed');
@@ -1285,7 +1887,75 @@
             _origShowCompletePage();
             bottomButtons.classList.add('hidden');
             peekTimeClearState();
+            clearTempoControlCooldown();
         };
+
+        // --- 动态节拍微调：全局 60 秒冷却 ---
+        function clearTempoControlCooldown() {
+            cancelAnimationFrame(tempoControlCooldownFrame);
+            tempoControlCooldownFrame = null;
+            tempoControlCooldownEnd = 0;
+            tempoDownBtn.classList.remove('cooldown');
+            tempoUpBtn.classList.remove('cooldown');
+            tempoDownBtn.style.setProperty('--cooldown-angle', '0deg');
+            tempoUpBtn.style.setProperty('--cooldown-angle', '0deg');
+            updateTempoControlAvailability();
+        }
+
+        function startTempoControlCooldown(sourceButton) {
+            tempoControlCooldownEnd = Date.now() + TEMPO_CONTROL_COOLDOWN_MS;
+            tempoDownBtn.classList.remove('cooldown');
+            tempoUpBtn.classList.remove('cooldown');
+            sourceButton.classList.add('cooldown');
+            cancelAnimationFrame(tempoControlCooldownFrame);
+
+            function drawCooldown() {
+                const remaining = tempoControlCooldownEnd - Date.now();
+                if (remaining <= 0) {
+                    sourceButton.classList.remove('cooldown');
+                    sourceButton.style.setProperty('--cooldown-angle', '0deg');
+                    updateTempoControlAvailability();
+                    return;
+                }
+                const progress = 1 - remaining / TEMPO_CONTROL_COOLDOWN_MS;
+                sourceButton.style.setProperty('--cooldown-angle', `${progress * 360}deg`);
+                updateTempoControlAvailability();
+                tempoControlCooldownFrame = requestAnimationFrame(drawCooldown);
+            }
+            drawCooldown();
+        }
+
+        function applyTempoAdjustment(direction) {
+            if (Date.now() < tempoControlCooldownEnd || isCoolingDown || isSprinting || !timerInterval || timerEnded) {
+                return;
+            }
+
+            const isSlower = direction < 0;
+            tempoScale = clamp(tempoScale + direction * 0.05, 0.7, 1.3);
+            tempoOffset = clamp(tempoOffset + direction * 10, -60, 60);
+
+            let timeChange;
+            if (isSlower) {
+                timeChange = Math.round(randomInRange(30, 300));
+                timeLeft += timeChange;
+                currentPhaseStartTime += timeChange;
+            } else {
+                const requested = Math.round(randomInRange(30, 120));
+                timeChange = Math.min(requested, Math.max(0, timeLeft - 5));
+                timeLeft -= timeChange;
+                currentPhaseStartTime -= timeChange;
+            }
+
+            updateUI();
+            if (isSlower) {
+                startTempoControlCooldown(tempoDownBtn);
+            } else {
+                startTempoControlCooldown(tempoUpBtn);
+            }
+        }
+
+        tempoDownBtn.addEventListener('click', () => applyTempoAdjustment(-1));
+        tempoUpBtn.addEventListener('click', () => applyTempoAdjustment(1));
 
         // ========== 节拍器 ==========
         const beatDotsEl = document.getElementById('beat-dots');
@@ -1657,7 +2327,65 @@
             { fn: patternSustainedLow,   w: 1  }   // 更稀有彩蛋
         ];
 
+        function appendSprintPattern() {
+            const last = tempoSchedule.length
+                ? tempoSchedule[tempoSchedule.length - 1].toCPM
+                : randomInRange(220, 250);
+            const motif = randInt(0, 4);
+            const segs = [];
+            let current = clamp(last, 190, 300);
+
+            if (motif === 0) {
+                // 高频浪涌
+                for (let i = 0; i < randInt(4, 8); i++) {
+                    const target = i % 2 === 0 ? randomInRange(250, 295) : randomInRange(210, 245);
+                    segs.push(segEase(randomInRange(8, 18), current, target));
+                    current = target;
+                }
+            } else if (motif === 1) {
+                // 三段推进
+                for (const target of [randomInRange(225, 245), randomInRange(250, 270), randomInRange(275, 300)]) {
+                    segs.push(segLinear(randomInRange(7, 14), current, target));
+                    segs.push(segHold(randomInRange(8, 18), target));
+                    current = target;
+                }
+            } else if (motif === 2) {
+                // 高频跳变
+                for (let i = 0; i < randInt(5, 10); i++) {
+                    const target = randomInRange(225, 300);
+                    segs.push(segInstant(current, target));
+                    segs.push(segHold(randomInRange(7, 14), target));
+                    current = target;
+                }
+            } else if (motif === 3) {
+                // 高位持续，期间穿插短尖峰
+                const base = randomInRange(225, 255);
+                segs.push(segEase(randomInRange(8, 15), current, base));
+                for (let i = 0; i < randInt(3, 6); i++) {
+                    segs.push(segHold(randomInRange(12, 24), base));
+                    const spike = randomInRange(275, 300);
+                    segs.push(segInstant(base, spike));
+                    segs.push(segHold(randomInRange(6, 12), spike));
+                    segs.push(segEase(randomInRange(6, 12), spike, base));
+                }
+            } else {
+                // 短暂回落后突然爆发
+                const dip = randomInRange(190, 220);
+                segs.push(segLinear(randomInRange(8, 14), current, dip));
+                segs.push(segHold(randomInRange(8, 16), dip));
+                const burst = randomInRange(280, 300);
+                segs.push(segInstant(dip, burst));
+                segs.push(segHold(randomInRange(18, 40), burst));
+            }
+
+            tempoSchedule.push(...segs);
+        }
+
         function appendNewPattern() {
+            if (isSprinting) {
+                appendSprintPattern();
+                return;
+            }
             const last = tempoSchedule.length
                 ? tempoSchedule[tempoSchedule.length - 1].toCPM
                 : randomInRange(140, 180);
@@ -1819,6 +2547,14 @@
             return null;
         }
 
+        function getEffectiveCPM(baseCPM) {
+            if (isSprinting) {
+                // 冲刺阶段使用独立高频，不接受用户的倍率或偏移调整。
+                return clamp(baseCPM, 190, 300);
+            }
+            return clamp(baseCPM * tempoScale + tempoOffset, 60, 320);
+        }
+
         function metroTick() {
             if (!metroActive || !audioCtx) return;
             while (nextBeatTime < audioCtx.currentTime + LOOKAHEAD) {
@@ -1838,7 +2574,7 @@
                     beatCounter = 0; // 休息后重新以重音开场
                     continue;
                 }
-                const cpm = getCPMAtElapsed(elapsed);
+                const cpm = getEffectiveCPM(getCPMAtElapsed(elapsed));
                 const isAccent = (beatCounter % 2 === 0);
                 playClick(nextBeatTime, isAccent);
                 scheduleBeatVisual(nextBeatTime, isAccent);
