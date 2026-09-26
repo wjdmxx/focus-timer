@@ -521,17 +521,107 @@
                 flex-direction: column;
             }
         }
+        [hidden] { display: none !important; }
+        button:focus-visible, a:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+        input, select { min-width: 0; }
+        .plan-preview { position: sticky; top: 24px; }
+        .timing-settings { margin-top: 20px; }
+        .timing-settings input { font-size: 18px; }
+        .session { --accent: #2563eb; }
+        .session-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+        .session-header button { padding: 0 18px; }
+        .eyebrow { color: #64748b; font-size: 13px; letter-spacing: .08em; margin-bottom: 8px; }
+        .session-overview { margin-bottom: 24px; font-size: 14px; font-weight: 700; color: #64748b; }
+        .session-overview .progress-track { height: 6px; margin-top: 10px; }
+        .session-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
+        .current-card, .upcoming-card { background: white; border: 1px solid #dbe3ef; border-radius: 24px; padding: 28px; min-width: 0; }
+        .current-card { border-top: 5px solid var(--accent); text-align: center; box-shadow: 0 16px 50px #1720330a; }
+        .current-card .current-name { font-size: clamp(26px, 4vw, 40px); margin: 32px 0 20px; overflow-wrap: anywhere; }
+        .current-card .time-display { font-size: clamp(72px, 10vw, 128px); letter-spacing: -.04em; margin-bottom: 18px; }
+        .current-card .meta { line-height: 1.6; }
+        .current-card .progress-bar { background: var(--accent); }
+        .stage-progress { margin-top: 28px; }
+        .quarter-labels { display: flex; justify-content: space-between; margin-top: 8px; color: #94a3b8; font-size: 12px; }
+        .session-controls { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-top: 24px; }
+        .session-controls button { height: 54px; border-radius: 12px; }
+        .beat-display { display: flex; justify-content: center; gap: 16px; margin-top: 20px; }
+        .beat-display span { padding: 9px 22px; border-radius: 100px; background: #f1f5f9; color: #94a3b8; border: 2px solid transparent; }
+        #light-beat.active { border-color: var(--accent); color: var(--accent); }
+        #heavy-beat.active { background: var(--accent); color: white; }
+        .rep-count { margin-top: 12px; font-weight: 800; color: var(--accent); }
+        .upcoming-card h2 { font-size: 20px; }
+        .upcoming-list { display: grid; gap: 12px; margin-top: 20px; }
+        .upcoming-item { padding: 16px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; }
+        .upcoming-item:first-child { background: #eff6ff; border-color: #bfdbfe; }
+        .upcoming-item .item-title { margin: 6px 0; overflow-wrap: anywhere; }
+        .upcoming-label { font-size: 11px; font-weight: 800; color: #64748b; }
+        .item-title { overflow-wrap: anywhere; }
+        @media (orientation: portrait), (max-width: 640px) {
+            .session-layout { grid-template-columns: 1fr; gap: 16px; }
+            .current-card { padding: 22px; }
+            .current-card .current-name { margin-top: 22px; }
+            .upcoming-card { padding: 22px; }
+            .plan-preview { position: static; }
+        }
+        @media (orientation: portrait) and (max-width: 600px) {
+            .page { padding: 18px 0; }
+            .session-header, .session-overview { margin-bottom: 16px; }
+            .session-header h1 { font-size: 24px; }
+            .session-header button { height: 42px; font-size: 14px; }
+            .eyebrow { font-size: 12px; margin-bottom: 4px; }
+            .current-card, .upcoming-card { padding: 18px; }
+            .current-card .current-name { margin: 16px 0 10px; }
+            .current-card .time-display { margin-bottom: 12px; }
+            .current-card > .meta { font-size: 13px; }
+            .beat-display { margin-top: 12px; }
+            .beat-display span { padding: 6px 18px; }
+            .rep-count { margin-top: 8px; }
+            .stage-progress, .session-controls { margin-top: 16px; }
+            .session-controls button { height: 46px; }
+            .upcoming-card > .section-note { display: none; }
+            .upcoming-list { margin-top: 12px; gap: 8px; }
+            .upcoming-item { padding: 12px; }
+        }
+        @media (orientation: landscape) and (max-height: 600px) {
+            .page { padding: 12px 0; }
+            .session-header, .session-overview { margin-bottom: 8px; }
+            .session-header button { height: 36px; font-size: 14px; }
+            .session-header h1 { font-size: 22px; }
+            .eyebrow { display: none; }
+            .session-overview { font-size: 12px; }
+            .session-overview .progress-track { margin-top: 6px; }
+            .session-layout { gap: 16px; grid-template-columns: minmax(0, 1.6fr) minmax(220px, 1fr); }
+            .current-card, .upcoming-card { padding: 12px; border-radius: 16px; }
+            .current-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; }
+            .current-card > .section-heading, .current-card > .meta, .stage-progress, .session-controls, #sound-status { grid-column: 1 / -1; }
+            .current-card .current-type { height: 28px; font-size: 13px; }
+            .current-card .current-name { font-size: 24px; margin: 0; }
+            .current-card .time-display { font-size: 56px; margin: 0; }
+            .current-card .meta { font-size: 12px; }
+            .stage-progress, .session-controls, .beat-display, .rep-count { margin-top: 0; }
+            .quarter-labels { display: none; }
+            .session-controls button { height: 40px; }
+            .beat-display { gap: 6px; }
+            .beat-display span { padding: 4px 12px; font-size: 12px; }
+            .rep-count { font-size: 13px; }
+            .upcoming-card > .section-note { display: none; }
+            .upcoming-list { margin-top: 10px; gap: 8px; max-height: calc(100dvh - 154px); overflow-y: auto; }
+            .upcoming-item { padding: 8px 10px; }
+            .upcoming-item .item-title { margin: 3px 0; }
+        }
+        #sound-status:empty { display: none; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     </style>
 </head>
 
 <body>
     <main class="page">
-        <div class="topbar">
+        <div class="topbar" id="setup-heading">
             <h1>运动计划计时器</h1>
             <a class="back-link" href="index.html">返回专注计时器</a>
         </div>
 
-        <div class="layout">
+        <div class="layout" id="setup-view">
             <section class="panel">
                 <h2>生成计划</h2>
                 <div class="config-panel">
@@ -547,623 +637,57 @@
                     <label for="target-minutes">每 1 份占比目标时间（分钟）</label>
                     <input id="target-minutes" type="number" min="1" max="120" step="1" value="10">
                 </div>
+                <div class="config-fields timing-settings">
+                    <label class="config-label" for="rest-seconds">组间休息（秒）<input id="rest-seconds" type="number" min="0" max="600" step="1" value="30"></label>
+                    <label class="config-label" for="prepare-seconds">每组准备（秒）<input id="prepare-seconds" type="number" min="0" max="120" step="1" value="5"></label>
+                </div>
+                <p class="section-note">每组运动前先准备，组间先休息再准备。填 0 可关闭。</p>
                 <div class="button-row">
-                    <button id="generate-btn" class="primary">确定</button>
-                    <button id="regenerate-btn" class="secondary" disabled>重随</button>
+                    <button id="generate-btn" class="primary">生成计划</button>
+                    <button id="regenerate-btn" class="secondary" disabled>重新随机</button>
                 </div>
 
                 <div class="stats" id="stats"></div>
             </section>
 
-            <section class="panel timer">
-                <div>
-                    <span id="current-type" class="current-type">待开始</span>
-                </div>
-                <div id="time-display" class="time-display">00:00</div>
-                <div id="current-name" class="current-name">输入时间后生成计划</div>
-                <div id="current-meta" class="meta">A=压，B=耗，C=跳</div>
-                <div class="progress-track">
-                    <div id="progress-bar" class="progress-bar"></div>
-                </div>
-                <div id="jump-progress" class="jump-progress"></div>
-                <div class="button-row">
-                    <button id="start-btn" class="primary" disabled>开始</button>
-                    <button id="pause-btn" class="secondary" disabled>暂停</button>
-                </div>
-                <button id="skip-btn" class="secondary wide-btn" disabled>跳过阶段</button>
-                <button id="reset-btn" class="danger wide-btn" disabled>停止</button>
+            <section class="panel plan-preview">
+                <div class="section-heading"><h2>运动计划</h2><span id="plan-total" class="meta">等待生成</span></div>
+                <p class="section-note" id="plan-summary">配置好运动后，生成本次计划。</p>
+                <button id="start-btn" class="primary wide-btn" disabled>开始运动</button>
+                <div id="plan-list" class="plan-list"><div class="empty">暂无计划</div></div>
             </section>
         </div>
 
-        <section class="panel" style="margin-top:16px;">
-            <h2>计划</h2>
-            <div id="plan-list" class="plan-list">
-                <div class="empty">暂无计划</div>
+        <section id="session-view" class="session" hidden aria-label="运动中">
+            <header class="session-header">
+                <div><div class="eyebrow">专注当下 · 跟随节奏</div><h1>本次运动</h1></div>
+                <button id="reset-btn" class="secondary" type="button">结束并返回</button>
+            </header>
+            <div class="session-overview">
+                <div class="section-heading"><span id="session-progress-label">本次进度</span><span id="session-remaining"></span></div>
+                <div class="progress-track"><div id="session-progress" class="progress-bar"></div></div>
+            </div>
+            <div class="session-layout">
+                <section class="current-card" aria-label="当前阶段">
+                    <div class="section-heading"><span id="current-type" class="current-type">准备</span><span id="current-position" class="meta"></span></div>
+                    <h2 id="current-name" class="current-name">准备开始</h2>
+                    <div id="time-display" class="time-display" role="timer">00:00</div>
+                    <div id="current-meta" class="meta"></div>
+                    <div id="beat-display" class="beat-display" hidden><span id="light-beat">轻拍</span><span id="heavy-beat">重拍</span></div>
+                    <div id="rep-count" class="rep-count" hidden></div>
+                    <div class="stage-progress"><div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div><div class="quarter-labels"><span>开始</span><span>¼</span><span>½</span><span>¾</span><span>完成</span></div></div>
+                    <div class="session-controls"><button id="pause-btn" class="primary">暂停</button><button id="skip-btn" class="secondary">跳过阶段</button></div>
+                    <p id="sound-status" class="section-note" role="status"></p>
+                </section>
+                <aside class="upcoming-card" aria-label="后续运动">
+                    <div class="section-heading"><h2>接下来</h2><span id="upcoming-count" class="meta"></span></div>
+                    <p class="section-note">下一组与后续运动</p>
+                    <div id="upcoming-list" class="upcoming-list"></div>
+                </aside>
             </div>
         </section>
     </main>
 
-    <script>
-        let exerciseConfig = {
-            A: {
-                name: '压',
-            weight: 1,
-            mode: 'time',
-                options: [
-                    { seconds: 30, weight: 1 },
-                    { seconds: 60, weight: 3 },
-                    { seconds: 90, weight: 3 },
-                    { seconds: 120, weight: 1 }
-                ]
-            },
-            B: {
-                name: '耗',
-                weight: 1,
-                mode: 'time',
-                options: [
-                    { seconds: 30, weight: 1 },
-                    { seconds: 45, weight: 2 },
-                    { seconds: 60, weight: 3 },
-                    { seconds: 90, weight: 2 },
-                    { seconds: 120, weight: 1 }
-                ]
-            },
-            C: {
-                name: '跳',
-                weight: 1,
-                mode: 'reps',
-                options: [
-                    { reps: 16, seconds: 48, weight: 1 },
-                    { reps: 32, seconds: 96, weight: 1 },
-                    { reps: 64, seconds: 192, weight: 1 }
-                ]
-            }
-        };
-
-        const colorPalette = ['#2563eb', '#f97316', '#16a34a', '#9333ea', '#0891b2', '#dc2626', '#ca8a04'];
-
-        const restOptions = [30, 45, 60];
-        const targetInput = document.getElementById('target-minutes');
-        const generateBtn = document.getElementById('generate-btn');
-        const regenerateBtn = document.getElementById('regenerate-btn');
-        const statsEl = document.getElementById('stats');
-        const planListEl = document.getElementById('plan-list');
-        const currentTypeEl = document.getElementById('current-type');
-        const timeDisplayEl = document.getElementById('time-display');
-        const currentNameEl = document.getElementById('current-name');
-        const currentMetaEl = document.getElementById('current-meta');
-        const progressBarEl = document.getElementById('progress-bar');
-        const jumpProgressEl = document.getElementById('jump-progress');
-        const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-        const skipBtn = document.getElementById('skip-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const configListEl = document.getElementById('config-list');
-        const configSummaryEl = document.getElementById('config-summary');
-        const addExerciseBtn = document.getElementById('add-exercise-btn');
-
-        let activities = [];
-        let timeline = [];
-        let currentIndex = 0;
-        let currentRemaining = 0;
-        let running = false;
-        let paused = false;
-        let timerId = null;
-        let lastTickAt = 0;
-        let audioCtx = null;
-        let lastJumpRep = 0;
-
-        function getExerciseTypes() {
-            return Object.keys(exerciseConfig);
-        }
-
-        function getTypeColor(type) {
-            const index = getExerciseTypes().indexOf(type);
-            return colorPalette[Math.max(0, index) % colorPalette.length];
-        }
-
-        function createDefaultOption(mode) {
-            return mode === 'reps'
-                ? { reps: 10, seconds: 30, weight: 1 }
-                : { seconds: 30, weight: 1 };
-        }
-
-        function nextExerciseId() {
-            const used = new Set(getExerciseTypes());
-            for (let code = 65; code <= 90; code++) {
-                const id = String.fromCharCode(code);
-                if (!used.has(id)) return id;
-            }
-            return `X${getExerciseTypes().length + 1}`;
-        }
-
-        function renderConfig() {
-            const types = getExerciseTypes();
-            configSummaryEl.textContent = `${types.length} 类 · 权重合计 ${types.reduce((sum, type) => sum + exerciseConfig[type].weight, 0)}`;
-            configListEl.innerHTML = types.map((type) => {
-                const config = exerciseConfig[type];
-                const color = getTypeColor(type);
-                const optionLabel = config.mode === 'reps' ? '次数 / 每次耗时（秒）' : '时间分布（秒）';
-                return `
-                    <div class="exercise-config" data-type="${type}" style="--exercise-color:${color}">
-                        <div class="config-top">
-                            <label class="config-label">运动名称<input data-field="name" value="${config.name}" maxlength="12"></label>
-                            <label class="config-label">占比权重<input data-field="weight" type="number" min="0" max="100" step="0.1" value="${config.weight}"></label>
-                            <button class="icon-btn remove-exercise" type="button" title="删除运动" aria-label="删除运动">×</button>
-                        </div>
-                        <div class="config-fields">
-                            <label class="config-label">规则类型<select data-field="mode">
-                                <option value="time" ${config.mode === 'time' ? 'selected' : ''}>按时间</option>
-                                <option value="reps" ${config.mode === 'reps' ? 'selected' : ''}>按次数</option>
-                            </select></label>
-                            <div class="config-label">类型编号<input value="${type}" disabled></div>
-                        </div>
-                        <div class="options-heading"><span>${optionLabel}</span><button class="text-btn add-option" type="button">＋ 添加一项</button></div>
-                        <div class="option-list">${config.options.map((option, index) => `
-                            <div class="option-row" data-option-index="${index}">
-                                ${config.mode === 'reps' ? `<label class="config-label">次数<input data-option-field="reps" type="number" min="1" max="999" value="${option.reps || 1}"></label>` : '<div></div>'}
-                                <label class="config-label">${config.mode === 'reps' ? '耗时（秒）' : '时长（秒）'}<input data-option-field="seconds" type="number" min="1" max="3600" value="${option.seconds}"></label>
-                                <label class="config-label">权重<input data-option-field="weight" type="number" min="0" max="100" step="0.1" value="${option.weight}"></label>
-                                <button class="remove-option" type="button" title="删除此项" aria-label="删除此项">×</button>
-                            </div>`).join('')}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function readConfigFromDom() {
-            const nextConfig = {};
-            configListEl.querySelectorAll('.exercise-config').forEach((card) => {
-                const type = card.dataset.type;
-                const field = (name) => card.querySelector(`[data-field="${name}"]`);
-                const mode = field('mode').value;
-                const options = [...card.querySelectorAll('.option-row')].map((row) => ({
-                    ...(mode === 'reps' ? { reps: Math.max(1, Number(row.querySelector('[data-option-field="reps"]')?.value) || 1) } : {}),
-                    seconds: Math.max(1, Number(row.querySelector('[data-option-field="seconds"]').value) || 1),
-                    weight: Math.max(0, Number(row.querySelector('[data-option-field="weight"]').value) || 0)
-                })).filter((option) => option.weight > 0);
-                nextConfig[type] = {
-                    name: field('name').value.trim() || `运动${type}`,
-                    weight: Math.max(0, Number(field('weight').value) || 0),
-                    mode,
-                    options: options.length > 0 ? options : [createDefaultOption(mode)]
-                };
-            });
-            exerciseConfig = nextConfig;
-        }
-
-        function weightedPick(options) {
-            const total = options.reduce((sum, item) => sum + item.weight, 0);
-            let roll = Math.random() * total;
-            for (const item of options) {
-                roll -= item.weight;
-                if (roll <= 0) return item;
-            }
-            return options[options.length - 1];
-        }
-
-        function shuffle(items) {
-            const arr = [...items];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        function formatTime(seconds) {
-            const safe = Math.max(0, Math.round(seconds));
-            const m = Math.floor(safe / 60);
-            const s = safe % 60;
-            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }
-
-        function formatReadable(seconds) {
-            const safe = Math.max(0, Math.round(seconds));
-            const m = Math.floor(safe / 60);
-            const s = safe % 60;
-            if (m > 0 && s > 0) return `${m}分${s}秒`;
-            if (m > 0) return `${m}分钟`;
-            return `${s}秒`;
-        }
-
-        function buildTypePlan(type, targetSeconds) {
-            const config = exerciseConfig[type];
-            const min = targetSeconds * 0.9;
-            const max = targetSeconds * 1.1;
-            let best = null;
-
-            for (let attempt = 0; attempt < 2000; attempt++) {
-                const items = [];
-                let total = 0;
-                const guardLimit = Math.max(max + 240, targetSeconds + 420);
-
-                while (total < min && total < guardLimit) {
-                    const picked = weightedPick(config.options);
-                    const item = {
-                        type,
-                        kind: 'exercise',
-                        name: config.name,
-                        seconds: picked.seconds,
-                        reps: config.mode === 'reps' ? picked.reps : null,
-                        secondsPerRep: config.mode === 'reps' ? picked.seconds / picked.reps : null
-                    };
-                    items.push(item);
-                    total += item.seconds;
-                }
-
-                const diff = Math.abs(total - targetSeconds);
-                const candidate = { items, total, diff };
-                if (!best || candidate.diff < best.diff) best = candidate;
-                if (total >= min && total <= max) return candidate;
-            }
-
-            return best;
-        }
-
-        function createPlan() {
-            const minutes = Math.max(1, Math.min(120, Number(targetInput.value) || 10));
-            targetInput.value = minutes;
-
-            const targetSeconds = minutes * 60;
-            readConfigFromDom();
-            const activeTypes = getExerciseTypes().filter((type) => exerciseConfig[type].weight > 0);
-            if (activeTypes.length === 0) {
-                alert('请至少保留一种运动，并将它的占比权重设为大于 0。');
-                return;
-            }
-            const byType = activeTypes.map((type) => ({
-                type,
-                ...buildTypePlan(type, targetSeconds * exerciseConfig[type].weight)
-            }));
-
-            activities = shuffle(byType.flatMap((group) => group.items));
-            timeline = [];
-            activities.forEach((item, index) => {
-                timeline.push(item);
-                if (index < activities.length - 1) {
-                    const restSeconds = restOptions[Math.floor(Math.random() * restOptions.length)];
-                    timeline.push({
-                        type: 'rest',
-                        kind: 'rest',
-                        name: '休息',
-                        seconds: restSeconds
-                    });
-                }
-            });
-
-            renderStats(byType, targetSeconds);
-            renderPlan();
-            resetTimerState();
-            currentNameEl.textContent = '计划已生成';
-            currentMetaEl.textContent = `${activities.length} 组运动，含 ${activities.length - 1} 次休息`;
-            startBtn.disabled = false;
-            regenerateBtn.disabled = false;
-            resetBtn.disabled = false;
-        }
-
-        function renderStats(byType, targetSeconds) {
-            const restTotal = timeline.filter((item) => item.kind === 'rest')
-                .reduce((sum, item) => sum + item.seconds, 0);
-            const exerciseTotal = byType.reduce((sum, group) => sum + group.total, 0);
-            const stats = byType.map((group) => {
-                const pct = Math.round((group.total / targetSeconds) * 100);
-                return {
-                    label: `${group.type} ${exerciseConfig[group.type].name}`,
-                    value: `${formatReadable(group.total)} · ${pct}%`
-                };
-            });
-
-            stats.push({ label: '运动合计', value: formatReadable(exerciseTotal) });
-            stats.push({ label: '休息合计', value: formatReadable(restTotal) });
-
-            statsEl.innerHTML = stats.map((item) => `
-                <div class="stat">
-                    <div class="stat-label">${item.label}</div>
-                    <div class="stat-value">${item.value}</div>
-                </div>
-            `).join('');
-        }
-
-        function renderPlan() {
-            if (timeline.length === 0) {
-                planListEl.innerHTML = '<div class="empty">暂无计划</div>';
-                return;
-            }
-
-            planListEl.innerHTML = timeline.map((item, index) => {
-                const badgeClass = item.kind === 'rest' ? 'rest' : '';
-                const title = item.kind === 'rest'
-                    ? '休息'
-                    : `${item.type} ${item.name}${item.reps ? ` · ${item.reps}次` : ''}`;
-                const subtitle = item.kind === 'rest'
-                    ? '30s / 45s / 60s 随机休息'
-                    : `${item.name} · 第 ${countExerciseBefore(index) + 1} 组`;
-                const stateClass = index < currentIndex ? 'done' : (index === currentIndex && running ? 'active' : '');
-                return `
-                    <div class="plan-item ${stateClass}" data-index="${index}">
-                        <div class="badge ${badgeClass}" style="${item.kind === 'rest' ? '' : `background:${getTypeColor(item.type)}`}" >${item.kind === 'rest' ? '休' : item.type}</div>
-                        <div>
-                            <div class="item-title">${title}</div>
-                            <div class="item-subtitle">${subtitle}</div>
-                        </div>
-                        <div class="item-time">${formatTime(item.seconds)}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function countExerciseBefore(index) {
-            return timeline.slice(0, index).filter((item) => item.kind === 'exercise').length;
-        }
-
-        function resetTimerState() {
-            stopTicker();
-            running = false;
-            paused = false;
-            currentIndex = 0;
-            currentRemaining = timeline[0]?.seconds || 0;
-            lastJumpRep = 0;
-            pauseBtn.textContent = '暂停';
-            pauseBtn.disabled = true;
-            skipBtn.disabled = true;
-            startBtn.disabled = timeline.length === 0;
-            updateCurrentDisplay();
-            renderPlan();
-        }
-
-        function ensureAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function beep(frequency = 880, duration = 0.08) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.frequency.value = frequency;
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration + 0.02);
-        }
-
-        function flashJump() {
-            document.body.classList.remove('jump-flash');
-            void document.body.offsetWidth;
-            document.body.classList.add('jump-flash');
-        }
-
-        function startTimer() {
-            if (timeline.length === 0) return;
-            ensureAudio();
-            if (!running) {
-                running = true;
-                currentIndex = 0;
-                currentRemaining = timeline[0].seconds;
-            }
-            paused = false;
-            lastTickAt = performance.now();
-            startBtn.disabled = true;
-            pauseBtn.disabled = false;
-            skipBtn.disabled = false;
-            pauseBtn.textContent = '暂停';
-            tick();
-            renderPlan();
-        }
-
-        function stopTicker() {
-            if (timerId) {
-                cancelAnimationFrame(timerId);
-                timerId = null;
-            }
-        }
-
-        function tick() {
-            if (!running || paused) return;
-
-            const now = performance.now();
-            const delta = (now - lastTickAt) / 1000;
-            lastTickAt = now;
-            currentRemaining -= delta;
-
-            handleJumpPulse();
-
-            if (currentRemaining <= 0) {
-                advanceItem();
-            }
-
-            updateCurrentDisplay();
-            timerId = requestAnimationFrame(tick);
-        }
-
-        function advanceItem() {
-            beep(timeline[currentIndex]?.kind === 'rest' ? 660 : 990, 0.1);
-            currentIndex += 1;
-            lastJumpRep = 0;
-
-            if (currentIndex >= timeline.length) {
-                finishTimer();
-                return;
-            }
-
-            currentRemaining = timeline[currentIndex].seconds + Math.min(0, currentRemaining);
-            if (currentRemaining <= 0) currentRemaining = timeline[currentIndex].seconds;
-            renderPlan();
-        }
-
-        function finishTimer() {
-            stopTicker();
-            running = false;
-            paused = false;
-            currentIndex = timeline.length;
-            currentRemaining = 0;
-            currentTypeEl.textContent = '完成';
-            currentTypeEl.className = 'current-type';
-            currentTypeEl.style.background = '';
-            timeDisplayEl.textContent = '00:00';
-            currentNameEl.textContent = '运动完成';
-            currentMetaEl.textContent = '可以重新生成下一轮计划';
-            progressBarEl.style.width = '100%';
-            jumpProgressEl.style.display = 'none';
-            startBtn.disabled = false;
-            pauseBtn.disabled = true;
-            skipBtn.disabled = true;
-            renderPlan();
-            beep(1046, 0.18);
-            setTimeout(() => beep(1318, 0.18), 180);
-        }
-
-        function togglePause() {
-            if (!running) return;
-            paused = !paused;
-            pauseBtn.textContent = paused ? '继续' : '暂停';
-            if (!paused) {
-                lastTickAt = performance.now();
-                tick();
-            } else {
-                stopTicker();
-            }
-        }
-
-        function skipCurrent() {
-            if (!running || currentIndex >= timeline.length) return;
-            currentRemaining = 0;
-            advanceItem();
-            updateCurrentDisplay();
-            if (!paused && running) {
-                lastTickAt = performance.now();
-            }
-        }
-
-        function updateCurrentDisplay() {
-            const item = timeline[currentIndex];
-            if (!item) {
-                timeDisplayEl.textContent = '00:00';
-                progressBarEl.style.width = '0%';
-                jumpProgressEl.style.display = 'none';
-                return;
-            }
-
-            const elapsed = item.seconds - currentRemaining;
-            const pct = Math.max(0, Math.min(100, (elapsed / item.seconds) * 100));
-            const badgeClass = item.kind === 'rest' ? 'rest' : '';
-
-            currentTypeEl.className = `current-type ${badgeClass}`;
-            currentTypeEl.style.background = item.kind === 'rest' ? '' : getTypeColor(item.type);
-            currentTypeEl.textContent = item.kind === 'rest' ? '休息' : `${item.type} ${item.name}`;
-            timeDisplayEl.textContent = formatTime(currentRemaining);
-            currentNameEl.textContent = item.kind === 'rest'
-                ? '休息'
-                : `${item.name}${item.reps ? ` · ${item.reps}次` : ''}`;
-            currentMetaEl.textContent = item.kind === 'rest'
-                ? `下一组：${nextExerciseLabel()}`
-                : `${currentIndex + 1} / ${timeline.length}`;
-            progressBarEl.style.width = `${pct}%`;
-            renderJumpProgress(item, elapsed);
-        }
-
-        function nextExerciseLabel() {
-            const next = timeline.slice(currentIndex + 1).find((item) => item.kind === 'exercise');
-            if (!next) return '完成';
-            return `${next.type} ${next.name}${next.reps ? ` ${next.reps}次` : ''}`;
-        }
-
-        function renderJumpProgress(item, elapsed) {
-            if (item?.kind !== 'exercise' || !item.reps) {
-                jumpProgressEl.style.display = 'none';
-                jumpProgressEl.innerHTML = '';
-                return;
-            }
-
-            const done = Math.max(0, Math.min(item.reps, Math.floor(elapsed / item.secondsPerRep)));
-            jumpProgressEl.style.display = 'grid';
-            jumpProgressEl.innerHTML = Array.from({ length: item.reps }, (_, index) => (
-                `<div class="rep-dot ${index < done ? 'done' : ''}"></div>`
-            )).join('');
-        }
-
-        function handleJumpPulse() {
-            const item = timeline[currentIndex];
-            if (!item || item.kind !== 'exercise' || !item.reps) return;
-
-            const elapsed = item.seconds - currentRemaining;
-            const rep = Math.max(0, Math.min(item.reps, Math.floor(elapsed / item.secondsPerRep)));
-            if (rep > lastJumpRep) {
-                lastJumpRep = rep;
-                flashJump();
-                beep(1180, 0.06);
-            }
-        }
-
-        generateBtn.addEventListener('click', createPlan);
-        regenerateBtn.addEventListener('click', createPlan);
-        startBtn.addEventListener('click', startTimer);
-        pauseBtn.addEventListener('click', togglePause);
-        skipBtn.addEventListener('click', skipCurrent);
-        resetBtn.addEventListener('click', resetTimerState);
-
-        configListEl.addEventListener('change', (event) => {
-            if (event.target.matches('[data-field="mode"]')) {
-                readConfigFromDom();
-                renderConfig();
-            }
-        });
-
-        configListEl.addEventListener('click', (event) => {
-            const card = event.target.closest('.exercise-config');
-            if (!card) return;
-
-            if (event.target.closest('.remove-exercise')) {
-                if (getExerciseTypes().length <= 1) {
-                    alert('至少保留一种运动。');
-                    return;
-                }
-                readConfigFromDom();
-                delete exerciseConfig[card.dataset.type];
-                renderConfig();
-                return;
-            }
-
-            if (event.target.closest('.add-option')) {
-                readConfigFromDom();
-                exerciseConfig[card.dataset.type].options.push(createDefaultOption(exerciseConfig[card.dataset.type].mode));
-                renderConfig();
-                return;
-            }
-
-            if (event.target.closest('.remove-option')) {
-                const rows = card.querySelectorAll('.option-row');
-                if (rows.length <= 1) {
-                    alert('每种运动至少保留一项时间规则。');
-                    return;
-                }
-                readConfigFromDom();
-                exerciseConfig[card.dataset.type].options.splice(Number(event.target.closest('.option-row').dataset.optionIndex), 1);
-                renderConfig();
-            }
-        });
-
-        addExerciseBtn.addEventListener('click', () => {
-            readConfigFromDom();
-            const type = nextExerciseId();
-            exerciseConfig[type] = {
-                name: '新运动',
-                weight: 1,
-                mode: 'time',
-                options: [createDefaultOption('time')]
-            };
-            renderConfig();
-        });
-
-        renderConfig();
-    </script>
+    <script src="workout.js?v=20260927-3"></script>
 </body>
-
 </html>
