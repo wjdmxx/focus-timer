@@ -34,8 +34,6 @@ let exerciseConfig = {
     }
 };
 
-const colorPalette = ['#2563eb', '#f97316', '#16a34a', '#9333ea', '#0891b2', '#dc2626', '#ca8a04'];
-
 const restInput = document.getElementById('rest-seconds');
 const prepareInput = document.getElementById('prepare-seconds');
 const targetInput = document.getElementById('target-minutes');
@@ -46,7 +44,6 @@ const planListEl = document.getElementById('plan-list');
 const currentTypeEl = document.getElementById('current-type');
 const timeDisplayEl = document.getElementById('time-display');
 const currentNameEl = document.getElementById('current-name');
-const currentMetaEl = document.getElementById('current-meta');
 const progressBarEl = document.getElementById('progress-bar');
 const sessionView = document.getElementById('session-view');
 const upcomingListEl = document.getElementById('upcoming-list');
@@ -78,11 +75,6 @@ function getExerciseTypes() {
     return Object.keys(exerciseConfig);
 }
 
-function getTypeColor(type) {
-    const index = getExerciseTypes().indexOf(type);
-    return colorPalette[Math.max(0, index) % colorPalette.length];
-}
-
 function createDefaultOption(mode) {
     return mode === 'reps'
         ? { reps: 10, seconds: 30, secondsPerRep: 3, weight: 1 }
@@ -100,13 +92,12 @@ function nextExerciseId() {
 
 function renderConfig() {
     const types = getExerciseTypes();
-    configSummaryEl.textContent = `${types.length} 类 · 权重合计 ${types.reduce((sum, type) => sum + exerciseConfig[type].weight, 0)}`;
+    configSummaryEl.textContent = `${types.length} 类`;
     configListEl.innerHTML = types.map((type) => {
         const config = exerciseConfig[type];
-        const color = getTypeColor(type);
         const optionLabel = config.mode === 'reps' ? '次数 / 每次耗时（秒）' : '时间分布（秒）';
         return `
-            <div class="exercise-config" data-mode="${config.mode}" data-type="${type}" style="--exercise-color:${color}">
+            <div class="exercise-config" data-mode="${config.mode}" data-type="${type}">
                 <div class="config-top">
                     <label class="config-label">运动名称<input data-field="name" value="${escapeHtml(config.name)}" maxlength="12"></label>
                     <label class="config-label">占比权重<input data-field="weight" type="number" min="0" max="100" step="0.1" value="${config.weight}"></label>
@@ -117,7 +108,6 @@ function renderConfig() {
                         <option value="time" ${config.mode === 'time' ? 'selected' : ''}>按时间</option>
                         <option value="reps" ${config.mode === 'reps' ? 'selected' : ''}>按次数</option>
                     </select></label>
-                    <div class="config-label">类型编号<input value="${type}" disabled></div>
                 </div>
                 <div class="options-heading"><span>${optionLabel}</span><button class="text-btn add-option" type="button">＋ 添加一项</button></div>
                 <div class="option-list">${config.options.map((option, index) => `
@@ -269,7 +259,7 @@ function createPlan() {
     renderStats(byType, targetSeconds);
     renderPlan();
     resetTimerState();
-    document.getElementById('plan-summary').textContent = `${activities.length} 组运动 · 组间休息 ${restSeconds} 秒 · 每组准备 ${prepareSeconds} 秒`;
+    document.getElementById('plan-summary').textContent = `${activities.length} 组运动`;
     document.getElementById('plan-total').textContent = formatReadable(timeline.reduce((sum, item) => sum + item.seconds, 0));
     startBtn.disabled = false;
     regenerateBtn.disabled = false;
@@ -283,8 +273,8 @@ function renderStats(byType, targetSeconds) {
     const stats = byType.map((group) => {
         const pct = Math.round((group.total / targetSeconds) * 100);
         return {
-            label: `${group.type} ${exerciseConfig[group.type].name}`,
-            value: `${formatReadable(group.total)} · ${pct}%`
+            label: exerciseConfig[group.type].name,
+            value: `${formatReadable(group.total)}（${pct}%）`
         };
     });
 
@@ -312,30 +302,30 @@ function escapeHtml(value) {
 }
 
 function itemDescription(item) {
-    if (item.kind === 'rest') return '组间休息';
-    if (item.kind === 'prepare') return `准备 · ${item.name}`;
-    return `${item.name}${item.reps ? ` · ${item.reps} 次` : ''}`;
+    if (item.kind === 'rest') return '休息';
+    if (item.kind === 'prepare') return `准备 ${item.name}`;
+    return item.name;
 }
 
 function renderPlan() {
     planListEl.innerHTML = timeline.map(item => `
         <div class="plan-item">
-            <div class="badge" style="background:${item.kind === 'exercise' ? getTypeColor(item.type) : '#64748b'}">${item.kind === 'rest' ? '休' : item.kind === 'prepare' ? '备' : item.type}</div>
-            <div><div class="item-title">${escapeHtml(itemDescription(item))}</div><div class="item-subtitle">${item.kind === 'exercise' ? `第 ${item.group} 组${item.reps ? ` · 每次 ${item.secondsPerRep} 秒 · 轻 / 重双拍` : ' · 四等分提示音'}` : '调整状态，准备下一组'}</div></div>
-            <div class="item-time">${formatTime(item.seconds)}</div>
+            <div class="badge">${item.kind === 'exercise' ? String(item.group).padStart(2, '0') : ''}</div>
+            <div><div class="item-title">${escapeHtml(itemDescription(item))}</div></div>
+            <div class="item-time">${item.reps ? `${item.reps} 次` : formatTime(item.seconds)}</div>
         </div>`).join('') || '<div class="empty">暂无计划</div>';
 }
 
 function renderUpcoming() {
     const upcoming = timeline.slice(currentIndex + 1).filter(item => item.kind === 'exercise');
     document.getElementById('upcoming-count').textContent = `${upcoming.length} 组`;
-    upcomingListEl.innerHTML = upcoming.slice(0, 3).map((item, index) => `
+    upcomingListEl.innerHTML = upcoming.slice(0, 3).map(item => `
         <div class="upcoming-item">
-            <span class="upcoming-label">${index === 0 ? (timeline[currentIndex]?.kind === 'prepare' ? '准备中的这一组' : '下一组') : `后续 ${index + 1}`} · 第 ${item.group} 组</span>
+            <span class="upcoming-number" aria-label="第 ${item.group} 组">${String(item.group).padStart(2, '0')}</span>
             <div class="item-title">${escapeHtml(item.name)}</div>
-            <div class="item-subtitle">${item.reps ? `${item.reps} 次 · 每次 ${item.secondsPerRep} 秒` : formatReadable(item.seconds)}</div>
-        </div>`).join('') || `<div class="empty">${running ? '这是最后一组，加油！' : '本次运动已结束'}</div>`;
-    if (upcoming.length > 3) upcomingListEl.innerHTML += `<p class="section-note">还有 ${upcoming.length - 3} 组，随进度依次显示</p>`;
+            <span class="upcoming-value">${item.reps ? `${item.reps} 次` : formatTime(item.seconds)}</span>
+        </div>`).join('') || `<div class="empty">${running ? '最后一组' : '已结束'}</div>`;
+    if (upcoming.length > 3) upcomingListEl.innerHTML += `<p class="section-note">还有 ${upcoming.length - 3} 组</p>`;
 }
 
 function showSession(show) {
@@ -475,7 +465,7 @@ function startTimer() {
     skipBtn.disabled = false;
     pauseBtn.textContent = '暂停';
     startBtn.disabled = true;
-    resetBtn.textContent = '结束并返回';
+    resetBtn.textContent = '结束';
     const startedAt = performance.now();
     enterStage(startedAt);
     if (waitingForAudio) {
@@ -573,7 +563,7 @@ function togglePause() {
         acquireWakeLock();
         startTicker();
     }
-    pauseBtn.textContent = paused ? '继续运动' : '暂停';
+    pauseBtn.textContent = paused ? '继续' : '暂停';
     updateCurrentDisplay();
 }
 
@@ -593,37 +583,27 @@ function skipCurrent() {
 function updateCurrentDisplay() {
     const item = timeline[currentIndex];
     const finished = currentIndex >= timeline.length;
-    const total = timeline.reduce((sum, stage) => sum + stage.seconds, 0);
     const remaining = currentRemaining + timeline.slice(currentIndex + 1).reduce((sum, stage) => sum + stage.seconds, 0);
-    document.getElementById('session-progress').style.width = `${total ? (total - remaining) / total * 100 : 0}%`;
-    document.getElementById('session-progress-label').textContent = finished ? `${activities.length} 组运动 · 本次已结束` : `第 ${item.group} / ${activities.length} 组`;
-    document.getElementById('session-remaining').textContent = finished ? '已完成' : `剩余 ${formatTime(Math.ceil(remaining))}`;
+    document.getElementById('session-progress-label').textContent = finished ? '已结束' : `${item.group} / ${activities.length} 组`;
+    document.getElementById('session-remaining').textContent = finished ? '' : `剩余 ${formatTime(Math.ceil(remaining))}`;
     document.getElementById('beat-display').hidden = !item?.reps;
     document.getElementById('rep-count').hidden = !item?.reps;
     if (!item) {
         currentTypeEl.textContent = '完成';
-        currentTypeEl.style.background = '#16a34a';
-        currentNameEl.textContent = '本次运动结束';
-        currentMetaEl.textContent = '休息一下，做得好。';
+        currentNameEl.textContent = '运动结束';
         timeDisplayEl.textContent = '00:00';
         progressBarEl.style.width = '100%';
-        document.getElementById('current-position').textContent = '';
         return;
     }
     const elapsed = Math.max(0, item.seconds - currentRemaining);
-    const color = item.kind === 'rest' ? '#64748b' : item.kind === 'prepare' ? '#d97706' : getTypeColor(item.type);
-    sessionView.style.setProperty('--accent', color);
-    currentTypeEl.style.background = color;
-    currentTypeEl.textContent = paused ? '已暂停' : item.kind === 'rest' ? '休息' : item.kind === 'prepare' ? '准备' : item.reps ? '次数训练' : '时间训练';
-    document.getElementById('current-position').textContent = `第 ${item.group} 组`;
-    currentNameEl.textContent = item.kind === 'rest' ? '放松，调整呼吸' : item.kind === 'prepare' ? `准备 · ${item.name}` : item.name;
-    timeDisplayEl.textContent = formatTime(Math.ceil(currentRemaining));
+    currentTypeEl.textContent = paused ? '已暂停' : item.kind === 'rest' ? '休息中' : item.kind === 'prepare' ? '准备' : '进行中';
     const next = timeline.slice(currentIndex + 1).find(stage => stage.kind === 'exercise');
-    currentMetaEl.textContent = item.kind === 'rest' ? `下一组：${next?.name || '完成'}` : item.kind === 'prepare' ? '调整姿势，提示音后开始' : item.reps ? `每次 ${item.secondsPerRep} 秒 · 轻拍准备，重拍完成一次` : '¼ 一声 · ½ 两声 · ¾ 三声';
+    currentNameEl.textContent = item.kind === 'rest' ? (next ? `下一组 ${next.name}` : '休息') : item.name;
+    timeDisplayEl.textContent = formatTime(Math.ceil(currentRemaining));
     progressBarEl.style.width = `${Math.min(100, elapsed / item.seconds * 100)}%`;
     if (item.reps) {
         const done = Math.min(item.reps, Math.floor((elapsed + 1e-7) / item.secondsPerRep));
-        document.getElementById('rep-count').textContent = `已完成 ${done} / ${item.reps} 次`;
+        document.getElementById('rep-count').textContent = `${done} / ${item.reps} 次`;
         const phase = elapsed % item.secondsPerRep;
         document.getElementById('light-beat').classList.toggle('active', !paused && phase >= item.secondsPerRep / 2);
         document.getElementById('heavy-beat').classList.toggle('active', !paused && done > 0 && phase < item.secondsPerRep / 2);

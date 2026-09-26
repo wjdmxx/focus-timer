@@ -90,7 +90,7 @@ test('pause cancels scheduled sound and resume reschedules a pending beat withou
     assert.equal(h.sounds.length, 3);
     assert.equal(Math.round(h.sounds[2].at * 1000), 20050);
     h.advance(21050);
-    assert.equal(h.elements.get('rep-count').textContent, '已完成 1 / 4 次');
+    assert.equal(h.elements.get('rep-count').textContent, '1 / 4 次');
 });
 
 test('skip while paused stays silent and retains the full next stage duration', () => {
