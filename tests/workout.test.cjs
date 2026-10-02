@@ -203,3 +203,67 @@ test('pausing before audio unlock prevents a delayed start sound', async () => {
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(h.sounds.length, 0);
 });
+
+
+test('random rest uses inclusive bounds and normalizes reversed settings', () => {
+    const h = harness();
+    h.run(`restModeInput.value = 'random';
+        document.getElementById('rest-min-seconds').value = '60';
+        document.getElementById('rest-max-seconds').value = '30';`);
+    assert.equal(h.run('JSON.stringify(readRestSettings())'), '{"min":30,"max":60}');
+    h.run('Math.random = () => 0');
+    assert.equal(h.run('pickRestSeconds(readRestSettings())'), 30);
+    h.run('Math.random = () => 0.999999');
+    assert.equal(h.run('pickRestSeconds(readRestSettings())'), 60);
+    h.run('Math.random = () => 0.5');
+    assert.equal(h.run('pickRestSeconds(readRestSettings())'), 45);
+});
+
+test('each rest is independently sampled and the last exercise has no trailing rest', () => {
+    const h = harness();
+    h.run(`readConfigFromDom = () => {};
+        exerciseConfig = { A: { name: '深蹲', weight: 1, mode: 'time', options: [{ seconds: 20, weight: 1 }] } };
+        targetInput.value = '1'; prepareInput.value = '5';
+        restModeInput.value = 'random';
+        document.getElementById('rest-min-seconds').value = '30';
+        document.getElementById('rest-max-seconds').value = '60';
+        let restPickCount = 0;
+        const originalPick = pickRestSeconds;
+        pickRestSeconds = settings => {
+            Math.random = () => restPickCount++ === 0 ? 0 : 0.999999;
+            return originalPick(settings);
+        };
+        createPlan();`);
+    assert.equal(h.run('timeline.filter(item => item.kind === "rest").map(item => item.seconds).join(",")'), '30,60');
+    assert.equal(h.run('restPickCount'), 2);
+    assert.equal(h.run('timeline.at(-1).kind'), 'exercise');
+    h.run(`document.getElementById('rest-min-seconds').value = '0';
+        document.getElementById('rest-max-seconds').value = '0'; createPlan();`);
+    assert.equal(h.run('timeline.some(item => item.kind === "rest")'), false);
+});
+
+test('preparation remains in the timer but is absent from the plan preview', () => {
+    const h = harness();
+    h.plan([{ kind: 'prepare', type: 'A', name: '深蹲', seconds: 5, group: 1 }, exercise(20)]);
+    h.run('renderPlan()');
+    assert.equal(h.run('timeline[0].kind'), 'prepare');
+    assert.ok(!h.elements.get('plan-list').innerHTML.includes('准备'));
+    assert.equal((h.elements.get('plan-list').innerHTML.match(/class="plan-item"/g) || []).length, 1);
+});
+
+test('rep blocks track completed reps, freeze on pause, and yield to the time bar during rest', () => {
+    const h = harness();
+    h.plan([exercise(32, { reps: 16, secondsPerRep: 2 }), { kind: 'rest', seconds: 5, group: 1 }]);
+    h.advance(7000);
+    const grid = h.elements.get('rep-progress');
+    assert.equal(grid.hidden, false);
+    assert.equal(h.elements.get('time-progress').hidden, true);
+    assert.equal((grid.innerHTML.match(/class="rep-block/g) || []).length, 16);
+    assert.equal((grid.innerHTML.match(/rep-block done/g) || []).length, 3);
+    h.run('togglePause()');
+    h.advance(12000);
+    assert.equal((grid.innerHTML.match(/rep-block done/g) || []).length, 3);
+    h.run('skipCurrent()');
+    assert.equal(grid.hidden, true);
+    assert.equal(h.elements.get('time-progress').hidden, false);
+});

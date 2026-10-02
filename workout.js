@@ -34,6 +34,9 @@ let exerciseConfig = {
     }
 };
 
+const restModeInput = document.getElementById('rest-mode');
+const repProgressEl = document.getElementById('rep-progress');
+let repProgressKey = '';
 const restInput = document.getElementById('rest-seconds');
 const prepareInput = document.getElementById('prepare-seconds');
 const targetInput = document.getElementById('target-minutes');
@@ -218,6 +221,36 @@ function buildTypePlan(type, targetSeconds) {
     return best;
 }
 
+function readRestSettings() {
+    if (restModeInput.value !== 'random') {
+        const seconds = numberInRange(restInput.value, 0, 600, 30, true);
+        restInput.value = seconds;
+        return { min: seconds, max: seconds };
+    }
+    const minInput = document.getElementById('rest-min-seconds');
+    const maxInput = document.getElementById('rest-max-seconds');
+    const first = numberInRange(minInput.value, 0, 600, 30, true);
+    const second = numberInRange(maxInput.value, 0, 600, 60, true);
+    const min = Math.min(first, second);
+    const max = Math.max(first, second);
+    minInput.value = min;
+    maxInput.value = max;
+    return { min, max };
+}
+
+function pickRestSeconds({ min, max }) {
+    return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function updateRestFields() {
+    const random = restModeInput.value === 'random';
+    document.getElementById('random-rest-fields').hidden = !random;
+    document.getElementById('fixed-rest-fields').hidden = random;
+}
+
+restModeInput.addEventListener('change', updateRestFields);
+updateRestFields();
+
 function createPlan() {
     const minutes = Math.max(1, Math.min(120, Number(targetInput.value) || 10));
     targetInput.value = minutes;
@@ -235,9 +268,8 @@ function createPlan() {
         ...buildTypePlan(type, targetSeconds * exerciseConfig[type].weight)
     }));
 
-    const restSeconds = numberInRange(restInput.value, 0, 600, 30, true);
+    const restSettings = readRestSettings();
     const prepareSeconds = numberInRange(prepareInput.value, 0, 120, 5, true);
-    restInput.value = restSeconds;
     prepareInput.value = prepareSeconds;
     activities = shuffle(byType.flatMap((group) => group.items));
     timeline = [];
@@ -245,7 +277,8 @@ function createPlan() {
         item.group = index + 1;
         if (prepareSeconds > 0) timeline.push({ type: item.type, kind: 'prepare', name: item.name, seconds: prepareSeconds, group: item.group });
         timeline.push(item);
-        if (index < activities.length - 1 && restSeconds > 0) {
+        const restSeconds = index < activities.length - 1 ? pickRestSeconds(restSettings) : 0;
+        if (restSeconds > 0) {
             timeline.push({
                 type: 'rest',
                 kind: 'rest',
@@ -308,7 +341,7 @@ function itemDescription(item) {
 }
 
 function renderPlan() {
-    planListEl.innerHTML = timeline.map(item => `
+    planListEl.innerHTML = timeline.filter(item => item.kind !== 'prepare').map(item => `
         <div class="plan-item">
             <div class="badge">${item.kind === 'exercise' ? String(item.group).padStart(2, '0') : ''}</div>
             <div><div class="item-title">${escapeHtml(itemDescription(item))}</div></div>
@@ -580,6 +613,29 @@ function skipCurrent() {
     updateCurrentDisplay();
 }
 
+function renderRepProgress(item, done = 0) {
+    const isReps = item?.kind === 'exercise' && Boolean(item.reps);
+    sessionView.classList.toggle('reps-mode', isReps);
+    repProgressEl.hidden = !isReps;
+    document.getElementById('time-progress').hidden = isReps;
+    if (!isReps) {
+        repProgressKey = '';
+        return;
+    }
+    const key = `${currentIndex}:${item.reps}:${done}`;
+    if (key === repProgressKey) return;
+    repProgressKey = key;
+    repProgressEl.innerHTML = Array.from({ length: item.reps }, (_, index) =>
+        `<span class="rep-block${index < done ? ' done' : ''}"></span>`
+    ).join('');
+    // Keep the most recently completed row visible for unusually long sets.
+    const completedBlock = repProgressEl.children?.[Math.max(0, done - 1)];
+    if (completedBlock) {
+        const rowBottom = completedBlock.offsetTop - repProgressEl.offsetTop + completedBlock.offsetHeight;
+        repProgressEl.scrollTop = Math.max(0, rowBottom - repProgressEl.clientHeight);
+    }
+}
+
 function updateCurrentDisplay() {
     const item = timeline[currentIndex];
     const finished = currentIndex >= timeline.length;
@@ -588,6 +644,7 @@ function updateCurrentDisplay() {
     document.getElementById('session-remaining').textContent = finished ? '' : `剩余 ${formatTime(Math.ceil(remaining))}`;
     document.getElementById('beat-display').hidden = !item?.reps;
     document.getElementById('rep-count').hidden = !item?.reps;
+    renderRepProgress(item, item?.reps ? Math.min(item.reps, Math.floor((item.seconds - currentRemaining + 1e-7) / item.secondsPerRep)) : 0);
     if (!item) {
         currentTypeEl.textContent = '完成';
         currentNameEl.textContent = '运动结束';
