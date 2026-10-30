@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'workout.js'), 'utf8');
 
-function harness() {
+function harness({ storage } = {}) {
     let now = 0;
     const elements = new Map();
     const sounds = [];
@@ -15,8 +15,8 @@ function harness() {
     let id = 0;
     const element = () => ({
         value: '', textContent: '', innerHTML: '', hidden: false, disabled: false,
-        style: { setProperty() {} }, classList: { toggle() {} },
-        focus() {}, addEventListener() {}, querySelectorAll() { return []; }
+        style: { setProperty() {} }, classList: { toggle() {}, add() {}, remove() {} },
+        focus() {}, addEventListener() {}, querySelectorAll() { return []; }, insertAdjacentHTML() {}
     });
     class AudioContext {
         state = 'running';
@@ -40,7 +40,10 @@ function harness() {
         clearInterval(id) { intervals.delete(id); },
         requestAnimationFrame(callback) { frames.set(++id, callback); return id; },
         cancelAnimationFrame(id) { frames.delete(id); },
-        alert(message) { throw new Error(message); }, console
+        alert(message) { throw new Error(message); }, console,
+        setClock(el, text) { el.textContent = text; }, setSessionChrome() {}, withViewTransition(update) { update(); },
+        enterSessionGuard() {}, leaveSessionGuard() {}, protectSession() {}, Date: { now: () => 1000000 + now }, JSON,
+        ...(storage ? { localStorage: storage } : {})
     });
     vm.runInContext(source, context);
     const run = code => vm.runInContext(code, context);
@@ -90,7 +93,8 @@ test('pause cancels scheduled sound and resume reschedules a pending beat withou
     assert.equal(h.sounds.length, 3);
     assert.equal(Math.round(h.sounds[2].at * 1000), 20050);
     h.advance(21050);
-    assert.equal(h.elements.get('rep-count').textContent, '1 / 4 次');
+    assert.equal(h.elements.get('time-display').textContent, '1');
+    assert.equal(h.elements.get('rep-total').textContent, '/ 4');
 });
 
 test('skip while paused stays silent and retains the full next stage duration', () => {
@@ -266,4 +270,52 @@ test('rep blocks track completed reps, freeze on pause, and yield to the time ba
     h.run('skipCurrent()');
     assert.equal(grid.hidden, true);
     assert.equal(h.elements.get('time-progress').hidden, false);
+});
+
+test('finish screen reports the time actually spent, not the planned total', () => {
+    const h = harness();
+    h.plan([exercise(20), exercise(30, { group: 2 })]);
+    h.advance(5000);
+    h.run('skipCurrent()');
+    h.advance(35000);
+    assert.equal(h.run('running'), false);
+    assert.equal(h.elements.get('time-display').textContent, '00:35');
+});
+
+function memoryStorage() {
+    const data = new Map();
+    return { data, getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value), removeItem: key => data.delete(key) };
+}
+
+test('a reopened page returns to the interrupted stage, paused', () => {
+    const storage = memoryStorage();
+    const first = harness({ storage });
+    first.plan([exercise(20), exercise(30, { group: 2 })]);
+    first.advance(21000);
+    first.advance(27000);
+
+    const second = harness({ storage });
+    assert.equal(second.run('running'), true);
+    assert.equal(second.run('paused'), true);
+    assert.equal(second.run('currentIndex'), 1);
+    assert.equal(second.run('currentRemaining'), 23);
+    assert.equal(second.run('completedSeconds'), 20);
+});
+
+test('a finished session leaves nothing to resume', () => {
+    const storage = memoryStorage();
+    const h = harness({ storage });
+    h.plan([exercise(5)]);
+    h.advance(5000);
+    assert.equal(h.run('running'), false);
+    assert.equal(storage.data.has('focus-timer.workout.session.v1'), false);
+});
+
+test('a plan with no active exercise cannot be started and does not interrupt with a dialog', () => {
+    const h = harness();
+    h.run(`readConfigFromDom = () => {};
+        exerciseConfig = { A: { name: '深蹲', weight: 0, mode: 'time', options: [{ seconds: 20, weight: 1 }] } };
+        createPlan();`);
+    assert.equal(h.run('timeline.length'), 0);
+    assert.equal(h.elements.get('start-btn').disabled, true);
 });

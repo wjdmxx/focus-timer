@@ -1,0 +1,132 @@
+/* 配置 */
+.hero { justify-items: center; padding: 16px 0 4px; }
+.hero .dial { width: min(70vw, 300px); }
+.focus-dial { --dial-color: var(--phase-focus); --dial-color-2: var(--phase-focus-2); view-transition-name: focus-dial; }
+.focus-dial .clock { font-size: 26cqi; view-transition-name: focus-clock; }
+.hero .ring { animation: dial-in 900ms var(--spring) both; }
+.focus-dial.is-random .ring-value { stroke-linecap: butt; stroke-dasharray: .0045 .0122; stroke-dashoffset: 0; }
+
+#config-items, #random-mode-options, #sprint-details { animation: rise 420ms var(--spring) both; }
+
+.row-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 12px 16px; }
+.row-slider input[type="range"] { grid-column: 1 / -1; }
+
+@media (min-width: 900px) {
+    .hero { padding-top: 24px; }
+    .hero .dial { width: min(100%, 420px); }
+}
+
+/* 计时：深色画布，阶段色只出现在环、光晕和数值上 */
+@property --stage { syntax: '<color>'; inherits: true; initial-value: rgb(255, 122, 26); }
+@property --stage-2 { syntax: '<color>'; inherits: true; initial-value: rgb(255, 176, 32); }
+
+.timer-stage { position: fixed; inset: 0; z-index: 20; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; overflow: hidden; padding: max(12px, env(safe-area-inset-top)) var(--gutter) max(32px, calc(env(safe-area-inset-bottom) + 16px)); color: #fff; background: #000; --stage: var(--phase-focus); --stage-2: var(--phase-focus-2); --label-2: rgba(235, 235, 245, .5); --label-3: rgba(235, 235, 245, .32); transition: --stage 700ms var(--ease-out), --stage-2 700ms var(--ease-out); }
+.timer-stage .ring-track { stroke: rgba(255, 255, 255, .1); }
+.timer-stage .ring-value { stroke: url(#stage-gradient); }
+.timer-stage .focus-dial { --dial-color: var(--stage); --dial-color-2: var(--stage-2); }
+body[data-phase="sprint"] .timer-stage { --stage: var(--phase-sprint); --stage-2: var(--phase-sprint-2); }
+body[data-phase="cooling"] .timer-stage { --stage: var(--phase-cooling); --stage-2: var(--phase-cooling-2); }
+
+/* 次要操作收到顶部，底部只留核心操作 */
+.stage-top { position: relative; z-index: 2; display: flex; justify-content: space-between; gap: 8px; min-height: 40px; }
+#force-end-btn { margin-left: auto; }
+.stage-btn { position: relative; overflow: hidden; min-width: 88px; height: 40px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 500; color: rgba(235, 235, 245, .62); background: rgba(255, 255, 255, .08); transition: transform 200ms var(--spring), background-color 200ms, color 200ms; }
+.stage-btn:active { transform: scale(.96); }
+.stage-btn .btn-text { position: relative; }
+.stage-btn.force-end-primed { color: #fff; background: rgb(255, 56, 60); }
+.stage-btn.on-cooldown { cursor: default; color: rgba(235, 235, 245, .32); }
+.cooldown-overlay { position: absolute; inset: 0 auto 0 0; width: 0; background: rgba(255, 255, 255, .1); }
+body[data-phase="cooling"] #peek-time-btn, .awaiting-resume #peek-time-btn { visibility: hidden; }
+
+.stage-dial { position: relative; z-index: 1; display: grid; place-items: center; min-height: 0; }
+.stage-dial .dial { width: min(84vw, 52vh, 480px); transition: transform 700ms var(--spring); }
+.stage-dial .clock { font-size: 25cqi; }
+body[data-phase="sprint"] .stage-dial .dial, body[data-phase="cooling"] .stage-dial .dial { transform: translateY(var(--center-shift)) scale(1.04); }
+.timer-stage { --center-shift: 80px; }
+
+/* 冲刺：环变粗，高光绕环飞驰，重音时向外扩散 */
+.stage-dial .ring circle { transition: stroke-width 500ms var(--spring), stroke-dashoffset 240ms linear; }
+body[data-phase="sprint"] .stage-dial .ring-value { stroke-width: 12; }
+.sprint-fx { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 500ms var(--ease-out); }
+body[data-phase="sprint"] .sprint-fx { opacity: 1; }
+.fx-comet { position: absolute; inset: -1%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0 58%, var(--stage-2) 86%, #fff 99.4%, transparent 100%); -webkit-mask: radial-gradient(closest-side, transparent 86%, #000 87.5%, #000 98%, transparent 99.5%); mask: radial-gradient(closest-side, transparent 86%, #000 87.5%, #000 98%, transparent 99.5%); animation: comet 1100ms linear infinite paused; }
+body[data-phase="sprint"] .fx-comet { animation-play-state: running; }
+.fx-glow { position: absolute; inset: 2%; border-radius: 50%; box-shadow: 0 0 44px 4px color-mix(in srgb, var(--stage) 62%, transparent), inset 0 0 36px color-mix(in srgb, var(--stage) 34%, transparent); }
+.fx-wave { position: absolute; inset: 1%; border-radius: 50%; border: 2px solid var(--stage-2); opacity: 0; }
+@keyframes comet { to { transform: rotate(1turn); } }
+
+/* 光晕随节拍呼吸，休息时淡出 */
+.halo { position: absolute; left: 50%; top: 50%; width: min(150vw, 100vh, 900px); aspect-ratio: 1; margin: calc(min(150vw, 100vh, 900px) / -2) 0 0 calc(min(150vw, 100vh, 900px) / -2); border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--stage) 30%, transparent), color-mix(in srgb, var(--stage) 10%, transparent) 52%, transparent); opacity: .55; pointer-events: none; animation: breathe var(--breath-duration, 2s) ease-in-out infinite; transition: opacity 600ms var(--ease-out), translate 700ms var(--spring); }
+.timer-stage.resting .halo, .awaiting-resume .halo { opacity: .12; animation-play-state: paused; }
+/* 冷静：放慢到接近呼吸的节奏 */
+body[data-phase="cooling"] .halo { animation-duration: 7s; }
+body[data-phase="sprint"] .halo, body[data-phase="cooling"] .halo { translate: 0 var(--center-shift); }
+@keyframes breathe { 0%, 100% { transform: scale(.96); opacity: .42; } 50% { transform: scale(1.04); opacity: .72; } }
+
+.timer-controls { position: relative; z-index: 2; display: grid; gap: 28px; width: min(100%, 400px); margin: 0 auto; }
+
+.tempo-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; width: min(100%, 280px); margin: 0 auto; }
+.beat-dots { grid-column: 2; display: flex; align-items: center; justify-content: center; gap: 16px; height: 16px; transition: opacity 400ms; }
+.beat-dots.resting { opacity: .18; }
+.beat-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .22); }
+.beat-dot.flash-accent { animation: beat-accent 170ms var(--ease-out); }
+.beat-dot.flash-normal { animation: beat-normal 150ms var(--ease-out); }
+@keyframes beat-accent { 0%, 25% { transform: scale(2.1); background: var(--stage); } 100% { transform: scale(1); } }
+@keyframes beat-normal { 0%, 25% { transform: scale(1.5); background: #fff; } 100% { transform: scale(1); } }
+
+/* 系统计时器式的染色圆形按钮 */
+.tempo-btn { --tint: 92, 184, 255; position: relative; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; color: rgb(var(--tint)); background: rgba(var(--tint), .16); transition: transform 240ms var(--spring), opacity 200ms, background-color 160ms; }
+.tempo-btn.plus { --tint: 255, 97, 101; }
+.tempo-btn:nth-of-type(2) { grid-column: 3; }
+.tempo-btn svg { width: 28px; height: 28px; }
+.tempo-btn::before { content: ''; position: absolute; inset: -5px; border-radius: 50%; background: conic-gradient(rgb(var(--tint)) calc(var(--cooldown, 0) * 1turn), transparent 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); opacity: 0; transition: opacity 200ms; }
+.tempo-btn.cooldown::before { opacity: 1; }
+.tempo-btn:active:not(:disabled) { transform: scale(.92); }
+.tempo-btn:disabled { opacity: .36; }
+.tempo-btn.cooldown:disabled { opacity: .7; }
+body[data-phase="sprint"] .tempo-btn, body[data-phase="cooling"] .tempo-btn, .awaiting-resume .tempo-btn { visibility: hidden; }
+
+.trigger-slot { min-height: 76px; }
+.trigger-button, .resume-button { display: block; width: 100%; height: 76px; border-radius: 999px; background: #fff; transition: transform 240ms var(--spring), background-color 160ms; }
+.trigger-button { box-shadow: inset 0 0 0 2.5px rgb(255, 56, 60), 0 8px 28px rgba(0, 0, 0, .4); }
+.trigger-button:active { transform: scale(.97); background: #ffeeee; }
+.resume-button { color: #000; font-size: 18px; font-weight: 600; }
+.resume-button:active { transform: scale(.97); }
+
+@media (orientation: landscape) and (max-height: 560px) {
+    .timer-stage { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr); gap: 32px; align-items: center; padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+    .stage-top { position: absolute; top: max(8px, env(safe-area-inset-top)); right: var(--gutter); justify-content: flex-end; }
+    .stage-btn { height: 36px; }
+    .stage-dial .dial { width: min(44vw, 86vh); }
+    .timer-controls { gap: 20px; padding-top: 36px; }
+    .trigger-slot { min-height: 68px; }
+    .trigger-button, .resume-button { height: 68px; }
+    .tempo-btn { width: 60px; height: 60px; }
+    .tempo-btn svg { width: 24px; height: 24px; }
+    body[data-phase="sprint"] .stage-dial .dial, body[data-phase="cooling"] .stage-dial .dial { transform: translateX(25vw) scale(1.04); }
+    body[data-phase="sprint"] .halo, body[data-phase="cooling"] .halo { translate: 25vw 0; }
+}
+
+/* 完成 */
+.complete { display: grid; align-content: center; gap: 24px; width: min(520px, 100%); min-height: 100dvh; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 32px) var(--gutter) calc(env(safe-area-inset-bottom) + 112px); }
+.complete > * { animation: rise 640ms var(--spring) both; }
+.complete > :nth-child(2) { animation-delay: 80ms; }
+.complete > :nth-child(3) { animation-delay: 140ms; }
+.complete-head { display: grid; justify-items: center; gap: 2px; text-align: center; }
+.complete-mark { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 12px; border-radius: 50%; color: #fff; background: var(--green); }
+.complete-mark svg { width: 30px; height: 30px; stroke-width: 2.8; }
+.complete-mark.is-interrupted { background: var(--fill-strong); color: var(--label-2); }
+.complete h1 { font-size: 16px; font-weight: 500; color: var(--label-2); }
+.complete-total { font-size: 44px; line-height: 1.15; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+.complete-bar { display: flex; gap: 3px; height: 10px; }
+.complete-bar:empty { display: none; }
+.complete-bar span { min-width: 4px; border-radius: 999px; background: var(--c); }
+
+.timeline-item { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 8px 16px; font-size: 16px; }
+.timeline-item + .timeline-item::before { content: ''; position: absolute; top: 0; left: 40px; right: 0; height: 1px; background: var(--separator); transform: scaleY(.5); }
+.timeline-label { display: flex; align-items: center; gap: 14px; font-weight: 500; }
+.timeline-label::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.timeline-label em { padding: 1px 7px; border-radius: 6px; font-size: 12px; font-style: normal; font-weight: 500; color: var(--label-2); background: var(--fill); }
+.timeline-time { color: var(--label-2); font-variant-numeric: tabular-nums; }
+.timeline:empty { display: none; }
